@@ -41,6 +41,8 @@ export function SidebarMascot(props: SidebarMascotProps): JSX.Element {
   let dragStartY = 0;
   let dragAnchorX = 0;
   let dragAnchorY = 0;
+  let lastClickTime = 0;
+  let isDragging = false;
 
   const renderers: Record<string, ReturnType<typeof createAnimatedRenderer>> = {};
   for (const [name, pack] of Object.entries(props.mascots)) {
@@ -107,18 +109,31 @@ export function SidebarMascot(props: SidebarMascotProps): JSX.Element {
       zIndex={100}
       flexDirection="column"
       onMouseDown={(e: any) => {
+        const now = Date.now();
+        if (now - lastClickTime < 300) {
+          const cur = currentName();
+          const idx = names.indexOf(cur);
+          const next = names[(idx + 1) % names.length];
+          switchTo(next);
+          lastClickTime = 0;
+          return;
+        }
+        lastClickTime = now;
+
         if (e.modifiers?.alt) {
           dragStartX = e.x;
           dragStartY = e.y;
           dragAnchorX = posX();
           dragAnchorY = posY();
+          isDragging = true;
+          renderers[currentName()].setDragging(true);
           e.preventDefault();
           e.stopPropagation();
           props.api.renderer.clearSelection();
         }
       }}
       onMouseDrag={(e: any) => {
-        if (e.modifiers?.alt) {
+        if (e.modifiers?.alt && isDragging) {
           setPosX(dragAnchorX + (e.x - dragStartX));
           setPosY(dragAnchorY + (e.y - dragStartY));
           e.preventDefault();
@@ -126,6 +141,19 @@ export function SidebarMascot(props: SidebarMascotProps): JSX.Element {
           props.api.renderer.clearSelection();
         }
       }}
+      onMouseUp={() => {
+        if (isDragging) {
+          isDragging = false;
+          renderers[currentName()].setDragging(false);
+        }
+      }}
+      onMouseDragEnd={() => {
+        if (isDragging) {
+          isDragging = false;
+          renderers[currentName()].setDragging(false);
+        }
+      }}
+
     >
       {renderers[currentName()]?.element() ?? null}
     </box>

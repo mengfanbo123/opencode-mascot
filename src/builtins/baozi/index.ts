@@ -35,6 +35,15 @@ const baoziEffects: MascotPack["effects"] = {
 
   render(lines, ctx) {
     const steamPhase = ctx.get("steamPhase") as number;
+
+    if (ctx.dragging) {
+      const faceIdx = lines.findIndex(l => /\(.*\)/.test(l));
+      if (faceIdx >= 0) {
+        lines[faceIdx] = lines[faceIdx].replace(/\(.*?\)/, "( °□° )");
+      }
+      return lines;
+    }
+
     if (lines.length > 0) {
       lines[0] = STEAM_PATTERNS[steamPhase];
     }

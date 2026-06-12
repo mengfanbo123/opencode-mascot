@@ -93,7 +93,7 @@ const yueerEffects: MascotPack["effects"] = {
   ],
 
   render(lines: string[], ctx: EffectRenderCtx): string[] {
-    const { state, frameName, breathPhase, jumpOffset, get } = ctx;
+    const { state, frameName, breathPhase, jumpOffset, dragging, get } = ctx;
     let result = [...lines];
 
     const ahogeAlt = get("ahogeAlt") as boolean;
@@ -102,6 +102,20 @@ const yueerEffects: MascotPack["effects"] = {
     const stompActive = get("stompActive") as boolean;
     const stompAlt = get("stompAlt") as boolean;
     const flapAlt = get("flapAlt") as boolean;
+
+    if (dragging) {
+      const faceLine = result.findIndex((l) => /\(.*\)/.test(l));
+      if (faceLine >= 0) {
+        result[faceLine] = result[faceLine].replace(/\(.*?\)/, "( °□° )");
+      }
+      const armLine = result.findIndex(l => l.includes("┃███┃"));
+      if (armLine >= 0) {
+        const left = flapAlt ? "╱" : "╲";
+        const right = flapAlt ? "╲" : "╱";
+        result[armLine] = result[armLine].replace("┃███┃", `${left}███${right}`);
+      }
+      return result;
+    }
 
     if (jumpOffset !== 0) {
       const armLine = result.findIndex(l => l.includes("┃███┃"));

@@ -78,6 +78,7 @@ export interface EffectRenderCtx {
   frameName: string;
   breathPhase: boolean;
   jumpOffset: number;
+  dragging: boolean;
   get: (name: string) => unknown;
 }
 

@@ -46,6 +46,7 @@ export function createAnimatedRenderer(pack: MascotPack): {
   element: () => JSX.Element;
   setState: (s: MascotState) => void;
   toggleWalk: () => void;
+  setDragging: (v: boolean) => void;
 } {
   const anim = { ...DEFAULT_ANIM, ...pack.animations };
   const fg = pack.colors?.defaultFg || undefined;
@@ -57,6 +58,7 @@ export function createAnimatedRenderer(pack: MascotPack): {
   const [walkOffset, setWalkOffset] = createSignal(0);
   const [jumpOffset, setJumpOffset] = createSignal(0);
   const [walkEnabled, setWalkEnabled] = createSignal(anim.walkEnabled ?? true);
+  const [dragging, setDraggingSignal] = createSignal(false);
 
   let idleSleepTimeout: ReturnType<typeof setTimeout> | null = null;
 
@@ -224,6 +226,7 @@ export function createAnimatedRenderer(pack: MascotPack): {
     jumpOffset();
     frameOverride();
     currentState();
+    dragging();
 
     for (const [, [get]] of extraSignals) {
       get();
@@ -250,6 +253,7 @@ export function createAnimatedRenderer(pack: MascotPack): {
           frameName,
           breathPhase: breathPhase(),
           jumpOffset: jumpOffset(),
+          dragging: dragging(),
           get: getExtra,
         };
       lines = effects.render(lines, renderCtx);
@@ -289,5 +293,14 @@ export function createAnimatedRenderer(pack: MascotPack): {
     }
   };
 
-  return { element, setState, toggleWalk };
+  const setDragging = (v: boolean) => {
+    setDraggingSignal(v);
+    if (v) {
+      setJumpOffset(-1);
+    } else {
+      setJumpOffset(0);
+    }
+  };
+
+  return { element, setState, toggleWalk, setDragging };
 }
