@@ -315,14 +315,12 @@ export function createAnimatedRenderer(pack: MascotPack): {
     const dm = dragMsg();
 
     return (
-      <box flexDirection="column" width={10} overflow="visible" left={left} top={top}>
-        {cel ? <text fg={flashColor() ?? fg} selectable={false}>{cel.text}</text> : null}
-        {dm ? <text fg="#FF4081" selectable={false}>{dm}</text> : null}
-        <box flexDirection="column" width={10} alignItems="flex-start">
-          {lines.map((line: string) => (
-            <text fg={flashColor() ?? fg} selectable={false}>{line}</text>
-          ))}
-        </box>
+      <box flexDirection="column" left={left} top={top}>
+        {cel ? <text fg={flashColor() ?? fg}>{cel.text}</text> : null}
+        {dm ? <text fg="#FF4081">{dm}</text> : null}
+        {lines.map((line: string) => (
+          <text fg={flashColor() ?? fg}>{line}</text>
+        ))}
       </box>
     );
   };
