@@ -44,7 +44,6 @@ export function SidebarMascot(props: SidebarMascotProps): JSX.Element {
   const [posY, setPosY] = createSignal(2);
   const [containerWidth, setContainerWidth] = createSignal(0);
   const [zBoost, setZBoost] = createSignal(false);
-  let firstStatus = true;
   let dragStartX = 0;
   let dragStartY = 0;
   let dragAnchorX = 0;
@@ -147,10 +146,6 @@ export function SidebarMascot(props: SidebarMascotProps): JSX.Element {
   props.api.event.on("session.status", (data: unknown) => {
     const payload = data as { type?: string; properties?: { sessionID?: string; status?: { type?: string } } } | null;
     const statusType = payload?.properties?.status?.type;
-    if (firstStatus) {
-      firstStatus = false;
-      renderers[currentName()].scatterIn();
-    }
     if (statusType === "busy" || statusType === "retry") {
       if (hideSide) returnToView();
       renderers[currentName()].setState("busy");
@@ -193,6 +188,10 @@ export function SidebarMascot(props: SidebarMascotProps): JSX.Element {
   onScatter(() => {
     renderers[currentName()].scatterIn();
   });
+
+  setTimeout(() => {
+    renderers[currentName()].scatterIn();
+  }, 2000);
 
   return (
     <box
