@@ -185,11 +185,17 @@ export function SidebarMascot(props: SidebarMascotProps): JSX.Element {
     setTimeout(() => setZBoost(false), 3500);
   });
 
+  let scattered = false;
+
   onScatter(() => {
+    if (scattered) return;
+    scattered = true;
     renderers[currentName()].scatterIn();
   });
 
   setTimeout(() => {
+    if (scattered) return;
+    scattered = true;
     renderers[currentName()].scatterIn();
   }, 2000);
 
