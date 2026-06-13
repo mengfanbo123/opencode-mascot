@@ -355,10 +355,10 @@ export function createAnimatedRenderer(pack: MascotPack): {
 
     if (s === "sleeping") {
       let phase = 1;
-      setZzz("ᶻ");
+      setZzz("zᶻ...");
       zzzTimer = setInterval(() => {
         phase = (phase % 3) + 1;
-        setZzz("ᶻ".repeat(phase));
+        setZzz("z" + "ᶻ".repeat(phase) + "...");
       }, 1500);
     } else {
       if (zzzTimer) { clearInterval(zzzTimer); zzzTimer = null; }
