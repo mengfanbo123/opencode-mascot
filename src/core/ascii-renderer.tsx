@@ -48,6 +48,7 @@ export function createAnimatedRenderer(pack: MascotPack): {
   toggleWalk: () => void;
   setDragging: (v: boolean) => void;
   celebrateUpdate: (newVersion: string) => void;
+  bounce: () => void;
 } {
   const anim = { ...DEFAULT_ANIM, ...pack.animations };
   const fg = pack.colors?.defaultFg || undefined;
@@ -333,5 +334,13 @@ export function createAnimatedRenderer(pack: MascotPack): {
     tick();
   };
 
-  return { element, setState, toggleWalk, setDragging, celebrateUpdate };
+  const bounce = () => {
+    if (currentState() === "sleeping") setState("idle");
+    setJumpOffset(-3);
+    setTimeout(() => setJumpOffset(-2), 150);
+    setTimeout(() => setJumpOffset(-1), 300);
+    setTimeout(() => setJumpOffset(0), 450);
+  };
+
+  return { element, setState, toggleWalk, setDragging, celebrateUpdate, bounce };
 }
