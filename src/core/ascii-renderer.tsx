@@ -320,7 +320,7 @@ export function createAnimatedRenderer(pack: MascotPack): {
         {dm ? <text fg="#FF4081">{dm}</text> : null}
         <box flexDirection="column" alignItems="flex-start">
           {lines.map((line: string) => (
-            <text fg={flashColor() ?? fg}>{line}</text>
+            <text fg={flashColor() ?? fg} selectable={false}>{line}</text>
           ))}
         </box>
       </box>
