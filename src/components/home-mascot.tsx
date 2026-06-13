@@ -57,9 +57,7 @@ export function HomeMascot(props: HomeMascotProps): JSX.Element {
     <box
       left={posX()}
       top={posY()}
-      width={16}
-      height={7}
-      padding={1}
+      alignItems="center"
       zIndex={100}
       flexDirection="column"
       onMouseDown={(e: any) => {
@@ -91,9 +89,7 @@ export function HomeMascot(props: HomeMascotProps): JSX.Element {
       onMouseDragEnd={() => { stopDrag(); }}
       onMouseOut={() => { stopDrag(); }}
     >
-      <box flexDirection="column" alignItems="center">
-        {renderers[currentName()]?.element() ?? null}
-      </box>
+      {renderers[currentName()]?.element() ?? null}
     </box>
   );
 }
