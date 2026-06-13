@@ -23,6 +23,7 @@ export function HomeMascot(props: HomeMascotProps): JSX.Element {
   const [currentName, setCurrentName] = createSignal(initialName);
   const [posX, setPosX] = createSignal(0);
   const [posY, setPosY] = createSignal(0);
+  const [zBoost, setZBoost] = createSignal(false);
   let dragStartX = 0;
   let dragStartY = 0;
   let dragAnchorX = 0;
@@ -42,11 +43,15 @@ export function HomeMascot(props: HomeMascotProps): JSX.Element {
   };
 
   onCelebrate((newVersion) => {
+    setZBoost(true);
     renderers[currentName()].celebrateUpdate(newVersion);
+    setTimeout(() => setZBoost(false), 2000);
   });
 
   onVersion((version) => {
+    setZBoost(true);
     renderers[currentName()].showVersion(version);
+    setTimeout(() => setZBoost(false), 3500);
   });
 
   const stopDrag = () => {
@@ -60,7 +65,7 @@ export function HomeMascot(props: HomeMascotProps): JSX.Element {
       top={posY()}
       width={12}
       height={6}
-      zIndex={100}
+      zIndex={zBoost() ? 9999 : 100}
       flexDirection="column"
       onMouseDown={(e: any) => {
         log("MOUSE", `down x=${e.x} y=${e.y} alt=${!!e.modifiers?.alt} btn=${e.button}`);

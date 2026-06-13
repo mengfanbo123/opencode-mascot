@@ -43,6 +43,7 @@ export function SidebarMascot(props: SidebarMascotProps): JSX.Element {
   const [posX, setPosX] = createSignal(20);
   const [posY, setPosY] = createSignal(2);
   const [containerWidth, setContainerWidth] = createSignal(0);
+  const [zBoost, setZBoost] = createSignal(false);
   let dragStartX = 0;
   let dragStartY = 0;
   let dragAnchorX = 0;
@@ -173,11 +174,15 @@ export function SidebarMascot(props: SidebarMascotProps): JSX.Element {
   });
 
   onCelebrate((newVersion) => {
+    setZBoost(true);
     renderers[currentName()].celebrateUpdate(newVersion);
+    setTimeout(() => setZBoost(false), 2000);
   });
 
   onVersion((version) => {
+    setZBoost(true);
     renderers[currentName()].showVersion(version);
+    setTimeout(() => setZBoost(false), 3500);
   });
 
   return (
@@ -186,7 +191,7 @@ export function SidebarMascot(props: SidebarMascotProps): JSX.Element {
       left={posX()}
       top={posY()}
       alignItems="center"
-      zIndex={100}
+      zIndex={zBoost() ? 9999 : 100}
       flexDirection="column"
       ref={(node: any) => {
         if (node) {
