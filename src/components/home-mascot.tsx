@@ -49,8 +49,6 @@ export function HomeMascot(props: HomeMascotProps): JSX.Element {
 
   return (
     <box
-      height={6}
-      width={16}
       alignItems="center"
       zIndex={9999}
       flexDirection="column"
