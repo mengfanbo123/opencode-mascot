@@ -4,7 +4,7 @@ import { createSignal, onCleanup } from "solid-js";
 import type { JSX } from "@opentui/solid";
 import type { MascotPack, MascotState } from "../core/types";
 import { createAnimatedRenderer } from "../core/ascii-renderer";
-import { onCelebrate, onVersion } from "../core/celebration-bus";
+import { onCelebrate, onVersion, onScatter } from "../core/celebration-bus";
 
 interface SidebarMascotProps {
   mascots: Record<string, MascotPack>;
@@ -183,6 +183,10 @@ export function SidebarMascot(props: SidebarMascotProps): JSX.Element {
     setZBoost(true);
     renderers[currentName()].showVersion(version);
     setTimeout(() => setZBoost(false), 3500);
+  });
+
+  onScatter(() => {
+    renderers[currentName()].scatterIn();
   });
 
   return (

@@ -52,6 +52,7 @@ export function createAnimatedRenderer(pack: MascotPack): {
   celebrateUpdate: (newVersion: string) => void;
   bounce: () => void;
   showVersion: (version: string) => void;
+  scatterIn: () => void;
 } {
   const anim = { ...DEFAULT_ANIM, ...pack.animations };
   const fg = pack.colors?.defaultFg || undefined;
@@ -68,10 +69,12 @@ export function createAnimatedRenderer(pack: MascotPack): {
   const [flashColor, setFlashColor] = createSignal<string | null>(null);
   const [dragMsg, setDragMsg] = createSignal<string | null>(null);
   const [zzz, setZzz] = createSignal<string | null>(null);
+  const [scatter, setScatter] = createSignal<{ dx: number; dy: number }[] | null>(null);
 
   let flashTimer: ReturnType<typeof setInterval> | null = null;
   let dragMsgTimer: ReturnType<typeof setInterval> | null = null;
   let zzzTimer: ReturnType<typeof setInterval> | null = null;
+  let scatterTimer: ReturnType<typeof setInterval> | null = null;
   let bounceTimers: ReturnType<typeof setTimeout>[] = [];
   let celebrateTimers: ReturnType<typeof setTimeout>[] = [];
   let versionTimer: ReturnType<typeof setTimeout> | null = null;
@@ -94,6 +97,10 @@ export function createAnimatedRenderer(pack: MascotPack): {
   const stopVersion = () => {
     if (versionTimer) { clearTimeout(versionTimer); versionTimer = null; }
     setCelebrate(null);
+  };
+  const stopScatter = () => {
+    if (scatterTimer) { clearInterval(scatterTimer); scatterTimer = null; }
+    setScatter(null);
   };
 
   const stopAllAnimations = () => {
@@ -266,6 +273,7 @@ export function createAnimatedRenderer(pack: MascotPack): {
     stopBounce();
     stopCelebrate();
     stopVersion();
+    stopScatter();
     if (zzzTimer) { clearInterval(zzzTimer); zzzTimer = null; }
   });
 
@@ -281,6 +289,7 @@ export function createAnimatedRenderer(pack: MascotPack): {
     flashColor();
     dragMsg();
     zzz();
+    scatter();
 
     for (const [, [get]] of extraSignals) {
       get();
@@ -317,14 +326,15 @@ export function createAnimatedRenderer(pack: MascotPack): {
     const left = offset > 0 ? offset : 0;
     const cel = celebrate();
     const dm = dragMsg();
+    const sc = scatter();
 
     return (
       <box flexDirection="column" alignItems="flex-start" left={left} top={top}>
         {cel ? <box position="absolute" top={-1} left={0}><text fg={flashColor() ?? fg}>{cel.text}</text></box> : null}
         {dm ? <box position="absolute" top={-1} left={0}><text fg="#FF4081">{dm}</text></box> : null}
         {zzz() ? <box position="absolute" top={-1} left={0}><text fg={flashColor() ?? fg}>{zzz()}</text></box> : null}
-        {lines.map((line: string) => (
-          <text fg={flashColor() ?? fg}>{line}</text>
+        {lines.map((line: string, i: number) => (
+          <text fg={flashColor() ?? fg} left={sc?.[i]?.dx ?? 0} top={sc?.[i]?.dy ?? 0}>{line}</text>
         ))}
       </box>
     );
@@ -433,7 +443,25 @@ export function createAnimatedRenderer(pack: MascotPack): {
     setJumpOffset(-3);
     bounceTimers.push(setTimeout(() => setJumpOffset(-2), 150));
     bounceTimers.push(setTimeout(() => setJumpOffset(-1), 300));
-    bounceTimers.push(setTimeout(() => { setJumpOffset(0); bounceTimers = []; }, 450));
+    bounceTimers.push(setTimeout(() => {
+      setJumpOffset(0);
+      bounceTimers = [];
+      if (Math.random() < 0.3) {
+        fallApart();
+      }
+    }, 450));
+  };
+
+  const fallApart = () => {
+    const lineCount = getFrameLines(pack, "default").length;
+    const offsets = Array.from({ length: lineCount }, (_, i) => ({
+      dx: Math.floor((Math.random() - 0.3) * 20),
+      dy: i === 0 ? 2 : Math.floor(Math.random() * 3) + 1,
+    }));
+    setScatter(offsets);
+    bounceTimers.push(setTimeout(() => {
+      scatterIn();
+    }, 1500));
   };
 
   const showVersion = (version: string) => {
@@ -442,5 +470,31 @@ export function createAnimatedRenderer(pack: MascotPack): {
     versionTimer = setTimeout(() => { setCelebrate(null); versionTimer = null; }, 3000);
   };
 
-  return { element, setState, toggleWalk, setDragging, celebrateUpdate, bounce, showVersion };
+  const scatterIn = () => {
+    stopScatter();
+    const lineCount = getFrameLines(pack, "default").length;
+    const offsets = Array.from({ length: lineCount }, () => ({
+      dx: Math.floor((Math.random() - 0.5) * 30),
+      dy: Math.floor((Math.random() - 0.5) * 12),
+    }));
+    setScatter(offsets);
+
+    let ticks = 0;
+    const MAX_TICKS = 15;
+    scatterTimer = setInterval(() => {
+      ticks++;
+      if (ticks >= MAX_TICKS) {
+        setScatter(offsets.map(() => ({ dx: 0, dy: 0 })));
+        stopScatter();
+        return;
+      }
+      const t = ticks / MAX_TICKS;
+      setScatter(offsets.map(o => ({
+        dx: Math.round(o.dx * (1 - t)),
+        dy: Math.round(o.dy * (1 - t)),
+      })));
+    }, 80);
+  };
+
+  return { element, setState, toggleWalk, setDragging, celebrateUpdate, bounce, showVersion, scatterIn };
 }
