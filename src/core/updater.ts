@@ -11,7 +11,7 @@ const require = createRequire(import.meta.url);
 
 const PKG_NAME = "@mingxy/opencode-mascot";
 const LOCK_FILE = join(tmpdir(), "mascot-update.lock");
-const STALE_LOCK_MS = 5 * 60 * 1000;
+const STALE_LOCK_MS = 30 * 1000;
 let lockFd: number | null = null;
 
 async function getLatestVersion(): Promise<string | null> {
