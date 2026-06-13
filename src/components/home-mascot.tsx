@@ -63,8 +63,6 @@ export function HomeMascot(props: HomeMascotProps): JSX.Element {
     <box
       left={posX()}
       top={posY()}
-      width={12}
-      height={6}
       zIndex={zBoost() ? 9999 : 100}
       flexDirection="column"
       onMouseDown={(e: any) => {
