@@ -114,9 +114,15 @@
 
 ## 📦 安装
 
-```bash
-opencode plugin @mingxy/opencode-mascot
+在 `~/.config/opencode/tui.json` 中添加插件：
+
+```json
+{
+  "plugin": ["@mingxy/opencode-mascot@latest"]
+}
 ```
+
+重启 opencode 即可。插件会自动更新到最新版。
 
 ## 🛠️ 技术栈
 

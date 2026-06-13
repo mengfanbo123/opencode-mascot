@@ -35,10 +35,7 @@ const yueerEffects: MascotPack["effects"] = {
     {
       interval: 200,
       update(ctx) {
-        if (
-          ctx.state === "thinking" &&
-          ctx.frameOverride === null
-        ) {
+        if (ctx.state === "thinking" || ctx.state === "busy") {
           ctx.set("stompActive", true);
           ctx.set("stompAlt", !(ctx.get("stompAlt") as boolean));
         } else {
