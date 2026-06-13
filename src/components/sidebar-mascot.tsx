@@ -218,16 +218,12 @@ export function SidebarMascot(props: SidebarMascotProps): JSX.Element {
           renderers[currentName()].setDragging(true);
           e.preventDefault();
           e.stopPropagation();
-          props.api.renderer.clearSelection();
         }
       }}
       onMouseDrag={(e: any) => {
         if (e.modifiers?.alt && isDragging) {
           setPosX(clampX(dragAnchorX + (e.x - dragStartX)));
           setPosY(clampY(dragAnchorY + (e.y - dragStartY)));
-          e.preventDefault();
-          e.stopPropagation();
-          props.api.renderer.clearSelection();
         }
       }}
       onMouseUp={() => {
