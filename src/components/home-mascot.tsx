@@ -20,8 +20,7 @@ export function HomeMascot(props: HomeMascotProps): JSX.Element {
   const initialName = names[Math.floor(Math.random() * names.length)];
 
   const [currentName, setCurrentName] = createSignal(initialName);
-  const [posX, setPosX] = createSignal(0);
-  const [posY, setPosY] = createSignal(0);
+  let boxRef: any = null;
   let dragStartX = 0;
   let dragStartY = 0;
   let dragAnchorX = 0;
@@ -49,16 +48,12 @@ export function HomeMascot(props: HomeMascotProps): JSX.Element {
   });
 
   return (
-    <box flexDirection="column" alignItems="center">
-      <box height={5} width={10} />
-      <box
-        position="absolute"
-        left={posX()}
-        top={posY()}
-        alignItems="center"
-        zIndex={100}
-        flexDirection="column"
-        onMouseDown={(e: any) => {
+    <box
+      alignItems="center"
+      zIndex={100}
+      flexDirection="column"
+      ref={(node: any) => { boxRef = node; }}
+      onMouseDown={(e: any) => {
         const now = Date.now();
         if (now - lastClickTime < 300) {
           switchToNext();
@@ -67,11 +62,11 @@ export function HomeMascot(props: HomeMascotProps): JSX.Element {
         }
         lastClickTime = now;
 
-        if (e.modifiers?.alt) {
+        if (e.modifiers?.alt && boxRef) {
           dragStartX = e.x;
           dragStartY = e.y;
-          dragAnchorX = posX();
-          dragAnchorY = posY();
+          dragAnchorX = boxRef.translateX || 0;
+          dragAnchorY = boxRef.translateY || 0;
           isDragging = true;
           renderers[currentName()].setDragging(true);
           e.preventDefault();
@@ -80,11 +75,9 @@ export function HomeMascot(props: HomeMascotProps): JSX.Element {
         }
       }}
       onMouseDrag={(e: any) => {
-        if (e.modifiers?.alt && isDragging) {
-          setPosX(dragAnchorX + (e.x - dragStartX));
-          setPosY(dragAnchorY + (e.y - dragStartY));
-          e.preventDefault();
-          props.api.renderer.clearSelection();
+        if (e.modifiers?.alt && isDragging && boxRef) {
+          boxRef.translateX = dragAnchorX + (e.x - dragStartX);
+          boxRef.translateY = dragAnchorY + (e.y - dragStartY);
         }
       }}
       onMouseUp={() => {
@@ -103,7 +96,6 @@ export function HomeMascot(props: HomeMascotProps): JSX.Element {
       }}
     >
       {renderers[currentName()]?.element() ?? null}
-      </box>
     </box>
   );
 }
