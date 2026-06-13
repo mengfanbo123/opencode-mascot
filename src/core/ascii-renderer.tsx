@@ -269,8 +269,8 @@ export function createAnimatedRenderer(pack: MascotPack): {
 
     return (
       <box flexDirection="column" left={left} top={top}>
-        {renderLines(lines, fg)}
         {cel ? <text fg={fg}>{cel.text}</text> : null}
+        {renderLines(lines, fg)}
       </box>
     );
   };
@@ -315,7 +315,8 @@ export function createAnimatedRenderer(pack: MascotPack): {
   // 连续跳跃 + 吐火星文泡泡庆祝更新成功
   const celebrateUpdate = (newVersion: string) => {
     const bubbles = pack.bubbleTexts ?? ["ᵘᵖ~"];
-    if (currentState() === "sleeping") setState("idle");
+    setState("happy");
+    setFrameOverride("happy");
 
     let step = 0;
     const JUMPS = 3;
@@ -323,6 +324,8 @@ export function createAnimatedRenderer(pack: MascotPack): {
       if (step >= JUMPS) {
         setJumpOffset(0);
         setCelebrate(null);
+        setFrameOverride(null);
+        setState("idle");
         return;
       }
       setJumpOffset(step % 2 === 0 ? -2 : 0);
