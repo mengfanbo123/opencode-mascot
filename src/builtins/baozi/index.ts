@@ -8,7 +8,11 @@ const STEAM_PATTERNS = [
   "   ◦∘~   ",
 ];
 
-const BUBBLE_TEXTS = ["ᵃⁿᵍ~", "ˣᶦᵃⁿ!", "ᵏᵘᵃⁱ", "ᶠᵃⁱ"];
+const BUBBLE_TEXTS = [
+  "ᵃⁿᵍ~", "ˣᶦᵃⁿ!", "ᵏᵘᵃⁱ", "ᶠᵃⁱ",
+  "ʳᵉⁿ~..", "ᵖᵃⁿ~", "ᵗᵃⁿᵍ!", "ʸᵉ~..",
+  "ᵐⁱᵃⁿ~", "ᵍᵘᵒ!", "ˢʰᵘ~..", "ʰᵘᵒ~",
+];
 
 const baoziEffects: MascotPack["effects"] = {
   signals: [

@@ -1,6 +1,6 @@
 {
   "name": "@mingxy/opencode-mascot",
-  "version": "0.1.2",
+  "version": "0.2.0",
   "description": "OpenCode TUI mascot plugin framework - customizable ASCII mascots for your terminal",
   "author": "mingxy",
   "license": "MIT",
@@ -15,18 +15,27 @@
     "tui.tsx",
     "src/"
   ],
-  "oc-plugin": ["tui"],
+  "oc-plugin": [
+    "tui"
+  ],
   "scripts": {
     "typecheck": "tsc --noEmit"
   },
   "peerDependencies": {
-    "@opentui/solid": ">=0.0.1",
-    "@opencode-ai/plugin": ">=0.1.0"
+    "@opencode-ai/plugin": ">=0.1.0",
+    "@opentui/solid": ">=0.0.1"
   },
   "devDependencies": {
+    "@types/node": "^25.9.3",
     "typescript": "^5.7.0"
   },
-  "keywords": ["opencode", "tui", "mascot", "plugin", "ascii-art"],
+  "keywords": [
+    "opencode",
+    "tui",
+    "mascot",
+    "plugin",
+    "ascii-art"
+  ],
   "repository": {
     "type": "git",
     "url": "https://github.com/mengfanbo123/opencode-mascot"

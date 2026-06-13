@@ -47,6 +47,7 @@ export function createAnimatedRenderer(pack: MascotPack): {
   setState: (s: MascotState) => void;
   toggleWalk: () => void;
   setDragging: (v: boolean) => void;
+  celebrateUpdate: (newVersion: string) => void;
 } {
   const anim = { ...DEFAULT_ANIM, ...pack.animations };
   const fg = pack.colors?.defaultFg || undefined;
@@ -59,6 +60,7 @@ export function createAnimatedRenderer(pack: MascotPack): {
   const [jumpOffset, setJumpOffset] = createSignal(0);
   const [walkEnabled, setWalkEnabled] = createSignal(anim.walkEnabled ?? true);
   const [dragging, setDraggingSignal] = createSignal(false);
+  const [celebrate, setCelebrate] = createSignal<{ text: string; count: number } | null>(null);
 
   let idleSleepTimeout: ReturnType<typeof setTimeout> | null = null;
 
@@ -227,6 +229,7 @@ export function createAnimatedRenderer(pack: MascotPack): {
     frameOverride();
     currentState();
     dragging();
+    celebrate();
 
     for (const [, [get]] of extraSignals) {
       get();
@@ -261,10 +264,12 @@ export function createAnimatedRenderer(pack: MascotPack): {
 
     const top = jumpOffset();
     const left = offset > 0 ? offset : 0;
+    const cel = celebrate();
 
     return (
       <box flexDirection="column" left={left} top={top}>
         {renderLines(lines, fg)}
+        {cel ? <text fg={fg}>{cel.text}</text> : null}
       </box>
     );
   };
@@ -296,11 +301,37 @@ export function createAnimatedRenderer(pack: MascotPack): {
   const setDragging = (v: boolean) => {
     setDraggingSignal(v);
     if (v) {
+      // 睡着时被拖拽 → 惊醒到 idle，切回 default 帧后手臂 ┃███┃ 才能被扇手渲染匹配
+      if (currentState() === "sleeping") {
+        setState("idle");
+      }
       setJumpOffset(-1);
     } else {
       setJumpOffset(0);
     }
   };
 
-  return { element, setState, toggleWalk, setDragging };
+  // 连续跳跃 + 吐火星文泡泡庆祝更新成功
+  const celebrateUpdate = (newVersion: string) => {
+    const bubbles = pack.bubbleTexts ?? ["ᵘᵖ~"];
+    if (currentState() === "sleeping") setState("idle");
+
+    let step = 0;
+    const JUMPS = 3;
+    const tick = () => {
+      if (step >= JUMPS) {
+        setJumpOffset(0);
+        setCelebrate(null);
+        return;
+      }
+      setJumpOffset(step % 2 === 0 ? -2 : 0);
+      const word = bubbles[Math.floor(Math.random() * bubbles.length)];
+      setCelebrate({ text: `${word} ᵘᵖ→ᵛ${newVersion}`, count: step });
+      step++;
+      setTimeout(tick, 600);
+    };
+    tick();
+  };
+
+  return { element, setState, toggleWalk, setDragging, celebrateUpdate };
 }
