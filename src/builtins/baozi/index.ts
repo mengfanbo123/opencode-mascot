@@ -52,17 +52,6 @@ const baoziEffects: MascotPack["effects"] = {
       lines[0] = STEAM_PATTERNS[steamPhase];
     }
 
-    if (ctx.state === "sleeping") {
-      const zzzPhase = ((ctx.get("steamPhase") as number) % 3) + 1;
-      for (let i = 0; i < lines.length; i++) {
-        if (lines[i].includes("-.-")) {
-          const padded = lines[i].padEnd(10);
-          lines[i] = padded + " " + "Z" + "z".repeat(zzzPhase - 1);
-          break;
-        }
-      }
-    }
-
     if (ctx.state === "busy" || ctx.state === "thinking") {
       const idx = ctx.get("bubbleIdx") as number;
       if (lines.length > 0) {
