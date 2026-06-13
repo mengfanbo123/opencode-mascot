@@ -76,8 +76,7 @@ export function HomeMascot(props: HomeMascotProps): JSX.Element {
           dragAnchorY = posY();
           isDragging = true;
           renderers[currentName()].setDragging(true);
-          e.preventDefault();
-          e.stopPropagation();
+          props.api.renderer.clearSelection();
         }
       }}
       onMouseDrag={(e: any) => {

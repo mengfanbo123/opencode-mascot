@@ -216,8 +216,7 @@ export function SidebarMascot(props: SidebarMascotProps): JSX.Element {
           dragAnchorY = posY();
           isDragging = true;
           renderers[currentName()].setDragging(true);
-          e.preventDefault();
-          e.stopPropagation();
+          props.api.renderer.clearSelection();
         }
       }}
       onMouseDrag={(e: any) => {
