@@ -4,7 +4,7 @@ import { createSignal } from "solid-js";
 import type { JSX } from "@opentui/solid";
 import type { MascotPack } from "../core/types";
 import { createAnimatedRenderer } from "../core/ascii-renderer";
-import { onCelebrate } from "../core/celebration-bus";
+import { onCelebrate, onVersion } from "../core/celebration-bus";
 
 interface HomeMascotProps {
   mascots: Record<string, MascotPack>;
@@ -42,6 +42,10 @@ export function HomeMascot(props: HomeMascotProps): JSX.Element {
 
   onCelebrate((newVersion) => {
     renderers[currentName()].celebrateUpdate(newVersion);
+  });
+
+  onVersion((version) => {
+    renderers[currentName()].showVersion(version);
   });
 
   return (

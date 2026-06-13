@@ -7,7 +7,7 @@ import { loadAllMascots } from "./src/core/mascot-loader"
 import { SidebarMascot } from "./src/components/sidebar-mascot"
 import { HomeMascot } from "./src/components/home-mascot"
 import { checkAndUpdate } from "./src/core/updater"
-import { emitCelebrate } from "./src/core/celebration-bus"
+import { emitCelebrate, emitVersion } from "./src/core/celebration-bus"
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -37,6 +37,8 @@ const tui: TuiPlugin = async (api, _options) => {
   checkAndUpdate(pluginVersion, (newVersion) => {
     emitCelebrate(newVersion);
   }).catch(() => {});
+
+  setTimeout(() => emitVersion(pluginVersion), 1500);
 }
 
 const plugin: TuiPluginModule = {

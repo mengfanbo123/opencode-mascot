@@ -4,6 +4,15 @@ import { createSignal, onCleanup } from "solid-js";
 import type { JSX } from "@opentui/solid";
 import type { MascotPack, MascotState, EffectTimerCtx, EffectRenderCtx } from "./types";
 
+const SUPERSCRIPT: Record<string, string> = {
+  "0": "⁰", "1": "¹", "2": "²", "3": "³", "4": "⁴",
+  "5": "⁵", "6": "⁶", "7": "⁷", "8": "⁸", "9": "⁹", ".": "·",
+};
+
+function toSuperscript(s: string): string {
+  return s.split("").map(c => SUPERSCRIPT[c] ?? c).join("");
+}
+
 const STATE_TO_FRAME: Record<MascotState, string> = {
   idle: "default",
   busy: "default",
@@ -49,6 +58,7 @@ export function createAnimatedRenderer(pack: MascotPack): {
   setDragging: (v: boolean) => void;
   celebrateUpdate: (newVersion: string) => void;
   bounce: () => void;
+  showVersion: (version: string) => void;
 } {
   const anim = { ...DEFAULT_ANIM, ...pack.animations };
   const fg = pack.colors?.defaultFg || undefined;
@@ -345,5 +355,10 @@ export function createAnimatedRenderer(pack: MascotPack): {
     setTimeout(() => setJumpOffset(0), 450);
   };
 
-  return { element, setState, toggleWalk, setDragging, celebrateUpdate, bounce };
+  const showVersion = (version: string) => {
+    setCelebrate({ text: `ᵛ${toSuperscript(version)}`, count: 0 });
+    setTimeout(() => setCelebrate(null), 3000);
+  };
+
+  return { element, setState, toggleWalk, setDragging, celebrateUpdate, bounce, showVersion };
 }
