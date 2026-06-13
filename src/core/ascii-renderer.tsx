@@ -112,7 +112,7 @@ export function createAnimatedRenderer(pack: MascotPack): {
     if (currentState() !== "idle") return;
     idleSleepTimeout = setTimeout(() => {
       if (currentState() === "idle") {
-        setCurrentState("sleeping");
+        setState("sleeping");
         stopWalk();
       }
     }, anim.idleTimeout);
