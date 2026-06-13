@@ -53,6 +53,7 @@ export function createAnimatedRenderer(pack: MascotPack): {
   bounce: () => void;
   showVersion: (version: string) => void;
   scatterIn: () => void;
+  explode: () => void;
 } {
   const anim = { ...DEFAULT_ANIM, ...pack.animations };
   const fg = pack.colors?.defaultFg || undefined;
@@ -69,12 +70,15 @@ export function createAnimatedRenderer(pack: MascotPack): {
   const [flashColor, setFlashColor] = createSignal<string | null>(null);
   const [dragMsg, setDragMsg] = createSignal<string | null>(null);
   const [zzz, setZzz] = createSignal<string | null>(null);
+  const [bomb, setBomb] = createSignal<{ fuse: string; count: string } | null>(null);
   const [scatter, setScatter] = createSignal<{ dx: number; dy: number }[] | null>(null);
 
   let flashTimer: ReturnType<typeof setInterval> | null = null;
   let dragMsgTimer: ReturnType<typeof setInterval> | null = null;
   let zzzTimer: ReturnType<typeof setInterval> | null = null;
   let scatterTimer: ReturnType<typeof setInterval> | null = null;
+  let bombTimer: ReturnType<typeof setTimeout> | null = null;
+  let explodeTimer: ReturnType<typeof setTimeout> | null = null;
   let bounceTimers: ReturnType<typeof setTimeout>[] = [];
   let celebrateTimers: ReturnType<typeof setTimeout>[] = [];
   let versionTimer: ReturnType<typeof setTimeout> | null = null;
@@ -106,6 +110,11 @@ export function createAnimatedRenderer(pack: MascotPack): {
   const stopScatter = () => {
     if (scatterTimer) { clearInterval(scatterTimer); scatterTimer = null; }
     setScatter(null);
+  };
+  const stopBomb = () => {
+    if (bombTimer) { clearTimeout(bombTimer); bombTimer = null; }
+    if (explodeTimer) { clearTimeout(explodeTimer); explodeTimer = null; }
+    setBomb(null);
   };
 
   const stopAllAnimations = () => {
@@ -226,7 +235,11 @@ export function createAnimatedRenderer(pack: MascotPack): {
     const delay = anim.walkMinDelay + Math.floor(Math.random() * (anim.walkMaxDelay - anim.walkMinDelay));
     return setTimeout(() => {
       if (currentState() === "idle" && !frameOverride() && walkStep === -1 && walkEnabled()) {
-        startWalk();
+        if (Math.random() < 0.1) {
+          explode();
+        } else {
+          startWalk();
+        }
       }
       if (currentState() !== "sleeping") {
         walkTimeout = scheduleNextWalk();
@@ -285,6 +298,7 @@ export function createAnimatedRenderer(pack: MascotPack): {
     stopVersion();
     stopScatter();
     stopFall();
+    stopBomb();
     if (zzzTimer) { clearInterval(zzzTimer); zzzTimer = null; }
   });
 
@@ -301,6 +315,7 @@ export function createAnimatedRenderer(pack: MascotPack): {
     dragMsg();
     zzz();
     scatter();
+    bomb();
 
     for (const [, [get]] of extraSignals) {
       get();
@@ -344,6 +359,13 @@ export function createAnimatedRenderer(pack: MascotPack): {
         {cel ? <box position="absolute" top={-1} left={0}><text fg={flashColor() ?? fg}>{cel.text}</text></box> : null}
         {dm ? <box position="absolute" top={-1} left={0}><text fg="#FF4081">{dm}</text></box> : null}
         {zzz() ? <box position="absolute" top={-1} left={0}><text fg={flashColor() ?? fg}>{zzz()}</text></box> : null}
+        {bomb() ? (
+          <box position="absolute" top={-2} left={3}>
+            <text fg="#FF4444">{bomb()!.fuse}↘</text>
+            <text fg="#FF6666">{"  ◉"}</text>
+            {bomb()!.count ? <text fg="#FFAA00">{bomb()!.count}</text> : null}
+          </box>
+        ) : null}
         {lines.map((line: string, i: number) => (
           <text fg={flashColor() ?? fg} left={sc?.[i]?.dx ?? 0} top={sc?.[i]?.dy ?? 0}>{line}</text>
         ))}
@@ -508,5 +530,45 @@ export function createAnimatedRenderer(pack: MascotPack): {
     }, 80);
   };
 
-  return { element, setState, toggleWalk, setDragging, celebrateUpdate, bounce, showVersion, scatterIn };
+  const explode = () => {
+    stopBomb();
+    stopScatter();
+    setFrameOverride("thinking");
+    setBomb({ fuse: "✦", count: "³·" });
+
+    let fuseAlt = false;
+    const fuseTimer = setInterval(() => {
+      fuseAlt = !fuseAlt;
+      setBomb({ fuse: fuseAlt ? "✦" : "◌", count: "³·" });
+    }, 400);
+
+    bombTimer = setTimeout(() => {
+      clearInterval(fuseTimer);
+      setBomb({ fuse: fuseAlt ? "✦" : "◌", count: "²·" });
+      bombTimer = setTimeout(() => {
+        clearInterval(fuseTimer);
+        setBomb({ fuse: fuseAlt ? "✦" : "◌", count: "¹·" });
+        bombTimer = setTimeout(() => {
+          clearInterval(fuseTimer);
+          setBomb(null);
+          setFrameOverride(null);
+          setFlashColor("#FFFFFF");
+          const lineCount = getFrameLines(pack, "default").length;
+          const offsets = Array.from({ length: lineCount }, () => ({
+            dx: Math.floor((Math.random() - 0.5) * 30),
+            dy: Math.floor((Math.random() - 0.5) * 15),
+          }));
+          setScatter(offsets);
+          setCelebrate({ text: "ᵇᵒᵒᵐ~", count: 0 });
+          explodeTimer = setTimeout(() => {
+            setFlashColor(null);
+            setCelebrate(null);
+            scatterIn();
+          }, 1200);
+        }, 700);
+      }, 700);
+    }, 700);
+  };
+
+  return { element, setState, toggleWalk, setDragging, celebrateUpdate, bounce, showVersion, scatterIn, explode };
 }
