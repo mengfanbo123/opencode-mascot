@@ -186,7 +186,7 @@ export function SidebarMascot(props: SidebarMascotProps): JSX.Element {
       left={posX()}
       top={posY()}
       alignItems="center"
-      zIndex={9999}
+      zIndex={100}
       flexDirection="column"
       ref={(node: any) => {
         if (node) {

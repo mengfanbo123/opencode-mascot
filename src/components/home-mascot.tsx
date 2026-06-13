@@ -55,8 +55,10 @@ export function HomeMascot(props: HomeMascotProps): JSX.Element {
 
   return (
     <box
-      height={5}
-      zIndex={9999}
+      left={posX()}
+      top={posY()}
+      zIndex={100}
+      flexDirection="column"
       onMouseDown={(e: any) => {
         const now = Date.now();
         if (now - lastClickTime < 300) {
@@ -91,14 +93,7 @@ export function HomeMascot(props: HomeMascotProps): JSX.Element {
       onMouseDragEnd={() => { stopDrag(); }}
       onMouseOut={() => { stopDrag(); }}
     >
-      <box
-        position="absolute"
-        left={posX()}
-        top={posY()}
-        flexDirection="column"
-      >
-        {renderers[currentName()]?.element() ?? null}
-      </box>
+      {renderers[currentName()]?.element() ?? null}
     </box>
   );
 }
