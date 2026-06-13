@@ -25,14 +25,6 @@ export interface AnimationConfig {
   jumpMaxDelay?: number;
 }
 
-/**
- * Sidebar display configuration.
- */
-export interface SidebarConfig {
-  greetings?: string[];
-  busyPhrases?: string[];
-}
-
 // ─── Effect system types ───
 
 /**
@@ -130,25 +122,7 @@ export interface MascotPack {
   };
 
   animations?: AnimationConfig;
-  sidebar?: SidebarConfig;
 
   /** Mascot-specific animation effects (timers + render) */
   effects?: MascotEffects;
-
-  /** Thinking bubble phrases, shown when mascot is in busy/thinking state */
-  bubbleTexts?: string[];
-}
-
-export interface SwitchConfig {
-  onState?: Partial<Record<MascotState, string>>;
-}
-
-/**
- * User-facing configuration merged from opencode config file.
- */
-export interface MascotConfig {
-  mascot: string;
-  animations: boolean;
-  idleSleep: boolean;
-  switchConfig?: SwitchConfig;
 }

@@ -314,7 +314,7 @@ export function createAnimatedRenderer(pack: MascotPack): {
 
   // 连续跳跃 + 吐火星文泡泡庆祝更新成功
   const celebrateUpdate = (newVersion: string) => {
-    const bubbles = pack.bubbleTexts ?? ["ᵘᵖ~"];
+    const bubbles = ["ᵘᵖ~", "ⁿᵉʷ!", "ʸᵉ~", "ᵍᵒ~", "ᵒᵏ~"];
     setState("happy");
     setFrameOverride("happy");
 

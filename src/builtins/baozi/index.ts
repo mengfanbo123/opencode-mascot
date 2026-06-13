@@ -94,12 +94,5 @@ export const baoziPack: MascotPack = {
     idleTimeout: 120000,
   },
 
-  sidebar: {
-    greetings: ["热乎乎的包子出炉啦~"],
-    busyPhrases: ["蒸包子中..."],
-  },
-
-  bubbleTexts: ["蒸着...", "发酵中...", "冒热气...", "快熟了..."],
-
   effects: baoziEffects,
 };

@@ -2,14 +2,13 @@
 
 import { createSignal } from "solid-js";
 import type { JSX } from "@opentui/solid";
-import type { MascotPack, MascotState, SwitchConfig } from "../core/types";
+import type { MascotPack, MascotState } from "../core/types";
 import { createAnimatedRenderer } from "../core/ascii-renderer";
 import { onCelebrate } from "../core/celebration-bus";
 import { useDraggableMascot } from "./use-draggable-mascot";
 
 interface SidebarMascotProps {
   mascots: Record<string, MascotPack>;
-  switchConfig?: SwitchConfig;
   initialMascot?: string;
   api: {
     event: {
@@ -73,7 +72,7 @@ export function SidebarMascot(props: SidebarMascotProps): JSX.Element {
     const cur = currentName();
     renderers[cur].setState(s);
 
-    const stateMap = props.switchConfig?.onState ?? DEFAULT_STATE_MAP;
+    const stateMap = DEFAULT_STATE_MAP;
     const target = stateMap[s];
     if (target && target !== cur && props.mascots[target]) {
       setCurrentName(target);

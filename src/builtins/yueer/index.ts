@@ -200,12 +200,5 @@ export const yueerPack: MascotPack = {
     idleTimeout: 90000,
   },
 
-  sidebar: {
-    greetings: ["师尊，月儿在此候命~"],
-    busyPhrases: ["铸造法器中..."],
-  },
-
-  bubbleTexts: ["嗯...", "让我想想...", "等等...", "本帝在算..."],
-
   effects: yueerEffects,
 };
