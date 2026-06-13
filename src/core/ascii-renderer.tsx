@@ -70,6 +70,9 @@ export function createAnimatedRenderer(pack: MascotPack): {
 
   let flashTimer: ReturnType<typeof setInterval> | null = null;
   let dragMsgTimer: ReturnType<typeof setInterval> | null = null;
+  let bounceTimers: ReturnType<typeof setTimeout>[] = [];
+  let celebrateTimers: ReturnType<typeof setTimeout>[] = [];
+  let versionTimer: ReturnType<typeof setTimeout> | null = null;
 
   const stopFlash = () => {
     if (flashTimer) { clearInterval(flashTimer); flashTimer = null; }
@@ -77,6 +80,26 @@ export function createAnimatedRenderer(pack: MascotPack): {
   const stopDragMsg = () => {
     if (dragMsgTimer) { clearInterval(dragMsgTimer); dragMsgTimer = null; }
     setDragMsg(null);
+  };
+  const stopBounce = () => {
+    bounceTimers.forEach(t => { clearTimeout(t); });
+    bounceTimers = [];
+  };
+  const stopCelebrate = () => {
+    celebrateTimers.forEach(t => { clearTimeout(t); });
+    celebrateTimers = [];
+  };
+  const stopVersion = () => {
+    if (versionTimer) { clearTimeout(versionTimer); versionTimer = null; }
+    setCelebrate(null);
+  };
+
+  const stopAllAnimations = () => {
+    stopFlash();
+    stopBounce();
+    stopCelebrate();
+    stopVersion();
+    setJumpOffset(0);
   };
 
   let idleSleepTimeout: ReturnType<typeof setTimeout> | null = null;
@@ -238,6 +261,9 @@ export function createAnimatedRenderer(pack: MascotPack): {
     for (const t of effectTimers) clearInterval(t);
     stopFlash();
     stopDragMsg();
+    stopBounce();
+    stopCelebrate();
+    stopVersion();
   });
 
   // ─── Render ───
@@ -360,6 +386,7 @@ export function createAnimatedRenderer(pack: MascotPack): {
   // 连续跳跃 + 吐火星文泡泡庆祝更新成功
   const celebrateUpdate = (newVersion: string) => {
     const bubbles = ["ᵘᵖ~", "ⁿᵉʷ!", "ʸᵉ~", "ᵍᵒ~", "ᵒᵏ~"];
+    stopAllAnimations();
     setState("happy");
     setFrameOverride("happy");
 
@@ -371,28 +398,32 @@ export function createAnimatedRenderer(pack: MascotPack): {
         setCelebrate(null);
         setFrameOverride(null);
         setState("idle");
+        celebrateTimers = [];
         return;
       }
       setJumpOffset(step % 2 === 0 ? -2 : 0);
       const word = bubbles[Math.floor(Math.random() * bubbles.length)];
       setCelebrate({ text: `${word} ᵘᵖ→ᵛ${newVersion}`, count: step });
       step++;
-      setTimeout(tick, 600);
+      celebrateTimers.push(setTimeout(tick, 600));
     };
     tick();
   };
 
   const bounce = () => {
+    stopBounce();
+    stopCelebrate();
     if (currentState() === "sleeping") setState("idle");
     setJumpOffset(-3);
-    setTimeout(() => setJumpOffset(-2), 150);
-    setTimeout(() => setJumpOffset(-1), 300);
-    setTimeout(() => setJumpOffset(0), 450);
+    bounceTimers.push(setTimeout(() => setJumpOffset(-2), 150));
+    bounceTimers.push(setTimeout(() => setJumpOffset(-1), 300));
+    bounceTimers.push(setTimeout(() => { setJumpOffset(0); bounceTimers = []; }, 450));
   };
 
   const showVersion = (version: string) => {
+    stopVersion();
     setCelebrate({ text: `ᵛ${toSuperscript(version)}`, count: 0 });
-    setTimeout(() => setCelebrate(null), 3000);
+    versionTimer = setTimeout(() => { setCelebrate(null); versionTimer = null; }, 3000);
   };
 
   return { element, setState, toggleWalk, setDragging, celebrateUpdate, bounce, showVersion };
