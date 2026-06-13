@@ -78,6 +78,7 @@ export function createAnimatedRenderer(pack: MascotPack): {
   let bounceTimers: ReturnType<typeof setTimeout>[] = [];
   let celebrateTimers: ReturnType<typeof setTimeout>[] = [];
   let versionTimer: ReturnType<typeof setTimeout> | null = null;
+  let fallTimers: ReturnType<typeof setTimeout>[] = [];
 
   const stopFlash = () => {
     if (flashTimer) { clearInterval(flashTimer); flashTimer = null; }
@@ -89,6 +90,10 @@ export function createAnimatedRenderer(pack: MascotPack): {
   const stopBounce = () => {
     bounceTimers.forEach(t => { clearTimeout(t); });
     bounceTimers = [];
+  };
+  const stopFall = () => {
+    fallTimers.forEach(t => { clearTimeout(t); });
+    fallTimers = [];
   };
   const stopCelebrate = () => {
     celebrateTimers.forEach(t => { clearTimeout(t); });
@@ -279,6 +284,7 @@ export function createAnimatedRenderer(pack: MascotPack): {
     stopCelebrate();
     stopVersion();
     stopScatter();
+    stopFall();
     if (zzzTimer) { clearInterval(zzzTimer); zzzTimer = null; }
   });
 
@@ -464,8 +470,9 @@ export function createAnimatedRenderer(pack: MascotPack): {
       dy: i === 0 ? 2 : Math.floor(Math.random() * 3) + 1,
     }));
     setScatter(offsets);
-    bounceTimers.push(setTimeout(() => {
+    fallTimers.push(setTimeout(() => {
       scatterIn();
+      fallTimers = [];
     }, 1500));
   };
 
