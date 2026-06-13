@@ -20,10 +20,11 @@ export function HomeMascot(props: HomeMascotProps): JSX.Element {
   const initialName = names[Math.floor(Math.random() * names.length)];
 
   const cw = (typeof process !== "undefined" && process.stdout?.columns) || 80;
+  const ch = (typeof process !== "undefined" && process.stdout?.rows) || 24;
 
   const [currentName, setCurrentName] = createSignal(initialName);
-  const [posX, setPosX] = createSignal(Math.floor(Math.random() * Math.max(0, cw - 20)));
-  const [posY, setPosY] = createSignal(Math.floor(Math.random() * 3));
+  const [posX, setPosX] = createSignal(Math.floor(Math.random() * Math.max(0, cw - 12)));
+  const [posY, setPosY] = createSignal(-(Math.floor(Math.random() * Math.min(ch - 8, 15)) + 3));
   const [zBoost, setZBoost] = createSignal(false);
   let dragStartX = 0;
   let dragStartY = 0;
@@ -66,6 +67,7 @@ export function HomeMascot(props: HomeMascotProps): JSX.Element {
 
   return (
     <box
+      position="absolute"
       left={posX()}
       top={posY()}
       zIndex={zBoost() ? 9999 : 100}
