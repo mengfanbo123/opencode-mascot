@@ -226,22 +226,23 @@ export function SidebarMascot(props: SidebarMascotProps): JSX.Element {
           setPosX(clampX(dragAnchorX + (e.x - dragStartX)));
           setPosY(clampY(dragAnchorY + (e.y - dragStartY)));
           e.preventDefault();
-          e.stopPropagation();
           props.api.renderer.clearSelection();
         }
       }}
       onMouseUp={() => {
-        if (isDragging) {
-          isDragging = false;
-          renderers[currentName()].setDragging(false);
-          checkEdge();
-        }
+        isDragging = false;
+        renderers[currentName()].setDragging(false);
+        checkEdge();
       }}
       onMouseDragEnd={() => {
+        isDragging = false;
+        renderers[currentName()].setDragging(false);
+        checkEdge();
+      }}
+      onMouseOut={() => {
         if (isDragging) {
           isDragging = false;
           renderers[currentName()].setDragging(false);
-          checkEdge();
         }
       }}
     >

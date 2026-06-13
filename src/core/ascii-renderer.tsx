@@ -44,16 +44,6 @@ function getFrameLines(pack: MascotPack, frameName: string): string[] {
   return frames[frameName] ?? frames["default"] ?? [];
 }
 
-function renderLines(lines: string[], fg?: string): JSX.Element {
-  return (
-    <box flexDirection="column">
-      {lines.map((line: string) => (
-        <text fg={fg}>{line}</text>
-      ))}
-    </box>
-  );
-}
-
 export function createAnimatedRenderer(pack: MascotPack): {
   element: () => JSX.Element;
   setState: (s: MascotState) => void;
@@ -297,13 +287,16 @@ export function createAnimatedRenderer(pack: MascotPack): {
     const left = offset > 0 ? offset : 0;
     const cel = celebrate();
     const dm = dragMsg();
-    const color = flashColor() ?? fg;
 
     return (
       <box flexDirection="column" left={left} top={top}>
-        {cel ? <text fg={color}>{cel.text}</text> : null}
+        {cel ? <text fg={flashColor() ?? fg}>{cel.text}</text> : null}
         {dm ? <text fg="#FF4081">{dm}</text> : null}
-        {renderLines(lines, color)}
+        <box flexDirection="column">
+          {lines.map((line: string) => (
+            <text fg={flashColor() ?? fg}>{line}</text>
+          ))}
+        </box>
       </box>
     );
   };
@@ -353,9 +346,14 @@ export function createAnimatedRenderer(pack: MascotPack): {
       dragMsgTimer = setInterval(() => {
         setDragMsg(DRAG_MSGS[Math.floor(Math.random() * DRAG_MSGS.length)]);
       }, 800);
+      stopFlash();
+      flashTimer = setInterval(() => {
+        setFlashColor(FLASH_COLORS[Math.floor(Math.random() * FLASH_COLORS.length)]);
+      }, 100);
     } else {
       setJumpOffset(0);
       stopDragMsg();
+      stopFlash();
     }
   };
 

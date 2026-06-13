@@ -81,17 +81,18 @@ export function HomeMascot(props: HomeMascotProps): JSX.Element {
           setPosX(dragAnchorX + (e.x - dragStartX));
           setPosY(dragAnchorY + (e.y - dragStartY));
           e.preventDefault();
-          e.stopPropagation();
           props.api.renderer.clearSelection();
         }
       }}
       onMouseUp={() => {
-        if (isDragging) {
-          isDragging = false;
-          renderers[currentName()].setDragging(false);
-        }
+        isDragging = false;
+        renderers[currentName()].setDragging(false);
       }}
       onMouseDragEnd={() => {
+        isDragging = false;
+        renderers[currentName()].setDragging(false);
+      }}
+      onMouseOut={() => {
         if (isDragging) {
           isDragging = false;
           renderers[currentName()].setDragging(false);
