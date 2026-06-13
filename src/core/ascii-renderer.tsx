@@ -315,7 +315,7 @@ export function createAnimatedRenderer(pack: MascotPack): {
     const dm = dragMsg();
 
     return (
-      <box flexDirection="column" left={left} top={top}>
+      <box flexDirection="column" alignItems="flex-start" left={left} top={top}>
         {cel ? <box position="absolute" top={-1} left={0}><text fg={flashColor() ?? fg}>{cel.text}</text></box> : null}
         {dm ? <box position="absolute" top={-1} left={0}><text fg="#FF4081">{dm}</text></box> : null}
         {lines.map((line: string) => (
