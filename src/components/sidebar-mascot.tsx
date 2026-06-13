@@ -240,12 +240,6 @@ export function SidebarMascot(props: SidebarMascotProps): JSX.Element {
         renderers[currentName()].setDragging(false);
         checkEdge();
       }}
-      onMouseOut={() => {
-        if (isDragging) {
-          isDragging = false;
-          renderers[currentName()].setDragging(false);
-        }
-      }}
     >
       {renderers[currentName()]?.element() ?? null}
     </box>
