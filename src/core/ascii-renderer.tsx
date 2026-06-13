@@ -67,9 +67,11 @@ export function createAnimatedRenderer(pack: MascotPack): {
   const [celebrate, setCelebrate] = createSignal<{ text: string; count: number } | null>(null);
   const [flashColor, setFlashColor] = createSignal<string | null>(null);
   const [dragMsg, setDragMsg] = createSignal<string | null>(null);
+  const [zzz, setZzz] = createSignal<string | null>(null);
 
   let flashTimer: ReturnType<typeof setInterval> | null = null;
   let dragMsgTimer: ReturnType<typeof setInterval> | null = null;
+  let zzzTimer: ReturnType<typeof setInterval> | null = null;
   let bounceTimers: ReturnType<typeof setTimeout>[] = [];
   let celebrateTimers: ReturnType<typeof setTimeout>[] = [];
   let versionTimer: ReturnType<typeof setTimeout> | null = null;
@@ -264,6 +266,7 @@ export function createAnimatedRenderer(pack: MascotPack): {
     stopBounce();
     stopCelebrate();
     stopVersion();
+    if (zzzTimer) { clearInterval(zzzTimer); zzzTimer = null; }
   });
 
   // ─── Render ───
@@ -277,6 +280,7 @@ export function createAnimatedRenderer(pack: MascotPack): {
     celebrate();
     flashColor();
     dragMsg();
+    zzz();
 
     for (const [, [get]] of extraSignals) {
       get();
@@ -318,6 +322,7 @@ export function createAnimatedRenderer(pack: MascotPack): {
       <box flexDirection="column" alignItems="flex-start" left={left} top={top}>
         {cel ? <box position="absolute" top={-1} left={0}><text fg={flashColor() ?? fg}>{cel.text}</text></box> : null}
         {dm ? <box position="absolute" top={-1} left={0}><text fg="#FF4081">{dm}</text></box> : null}
+        {zzz() ? <box position="absolute" top={-1} left={0}><text fg={flashColor() ?? fg}>{zzz()}</text></box> : null}
         {lines.map((line: string) => (
           <text fg={flashColor() ?? fg}>{line}</text>
         ))}
@@ -340,11 +345,24 @@ export function createAnimatedRenderer(pack: MascotPack): {
 
     if (s === "thinking" || s === "busy") {
       stopFlash();
+      setZzz(null);
       flashTimer = setInterval(() => {
         setFlashColor(FLASH_COLORS[Math.floor(Math.random() * FLASH_COLORS.length)]);
       }, 120);
     } else {
       stopFlash();
+    }
+
+    if (s === "sleeping") {
+      let phase = 1;
+      setZzz("Z");
+      zzzTimer = setInterval(() => {
+        phase = (phase % 3) + 1;
+        setZzz("Z" + "z".repeat(phase - 1));
+      }, 1500);
+    } else {
+      if (zzzTimer) { clearInterval(zzzTimer); zzzTimer = null; }
+      setZzz(null);
     }
   };
 

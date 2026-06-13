@@ -98,7 +98,6 @@ const yueerEffects: MascotPack["effects"] = {
 
     const ahogeAlt = get("ahogeAlt") as boolean;
     const waveSide = get("waveSide") as boolean;
-    const zzzPhase = get("zzzPhase") as number;
     const stompActive = get("stompActive") as boolean;
     const stompAlt = get("stompAlt") as boolean;
     const flapAlt = get("flapAlt") as boolean;
@@ -153,18 +152,6 @@ const yueerEffects: MascotPack["effects"] = {
       const faceLine = result.findIndex((l) => /\(.*\)/.test(l));
       if (faceLine >= 0) {
         result[faceLine] = result[faceLine].replace(/\(.*?\)/, `( ${THINKING_FACES[faceIdx]} )`);
-      }
-    }
-
-    if (zzzPhase > 0 && state === "sleeping") {
-      const baseWidth = 10;
-      for (let i = 0; i < result.length; i++) {
-        if (result[i].includes("-.-")) {
-          const zzz = "Z" + "z".repeat(zzzPhase - 1);
-          const padded = result[i].padEnd(baseWidth);
-          result[i] = padded + " " + zzz;
-          break;
-        }
       }
     }
 

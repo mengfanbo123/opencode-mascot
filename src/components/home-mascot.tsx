@@ -95,8 +95,8 @@ export function HomeMascot(props: HomeMascotProps): JSX.Element {
           setPosY(dragAnchorY + (e.y - dragStartY));
         }
       }}
-      onMouseUp={() => { stopDrag(); }}
-      onMouseDragEnd={() => { stopDrag(); }}
+      onMouseUp={() => { log("MOUSE", `up isDragging=${isDragging}`); stopDrag(); }}
+      onMouseDragEnd={() => { log("MOUSE", `dragEnd isDragging=${isDragging}`); stopDrag(); }}
     >
       {renderers[currentName()]?.element() ?? null}
     </box>
