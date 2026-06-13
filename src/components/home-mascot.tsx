@@ -22,10 +22,14 @@ export function HomeMascot(props: HomeMascotProps): JSX.Element {
   const cw = (typeof process !== "undefined" && process.stdout?.columns) || 80;
   const ch = (typeof process !== "undefined" && process.stdout?.rows) || 24;
 
+  const initX = Math.floor(Math.random() * Math.max(0, cw - 12));
+  const initY = -(Math.floor(Math.random() * Math.min(ch - 8, 15)) + 3);
+
   const [currentName, setCurrentName] = createSignal(initialName);
-  const [posX, setPosX] = createSignal(Math.floor(Math.random() * Math.max(0, cw - 12)));
-  const [posY, setPosY] = createSignal(-(Math.floor(Math.random() * Math.min(ch - 8, 15)) + 3));
   const [zBoost, setZBoost] = createSignal(false);
+  let boxRef: any = null;
+  let curX = initX;
+  let curY = initY;
   let dragStartX = 0;
   let dragStartY = 0;
   let dragAnchorX = 0;
@@ -42,6 +46,13 @@ export function HomeMascot(props: HomeMascotProps): JSX.Element {
     const cur = currentName();
     const idx = names.indexOf(cur);
     setCurrentName(names[(idx + 1) % names.length]);
+  };
+
+  const applyPos = () => {
+    if (boxRef) {
+      boxRef.translateX = curX;
+      boxRef.translateY = curY;
+    }
   };
 
   onCelebrate((newVersion) => {
@@ -67,11 +78,12 @@ export function HomeMascot(props: HomeMascotProps): JSX.Element {
 
   return (
     <box
-      position="absolute"
-      left={posX()}
-      top={posY()}
       zIndex={zBoost() ? 9999 : 100}
       flexDirection="column"
+      ref={(node: any) => {
+        boxRef = node;
+        applyPos();
+      }}
       onMouseDown={(e: any) => {
         const now = Date.now();
         if (now - lastClickTime < 300) {
@@ -84,8 +96,8 @@ export function HomeMascot(props: HomeMascotProps): JSX.Element {
         if (e.modifiers?.alt) {
           dragStartX = e.x;
           dragStartY = e.y;
-          dragAnchorX = posX();
-          dragAnchorY = posY();
+          dragAnchorX = curX;
+          dragAnchorY = curY;
           isDragging = true;
           renderers[currentName()].setDragging(true);
           props.api.renderer.clearSelection();
@@ -93,8 +105,9 @@ export function HomeMascot(props: HomeMascotProps): JSX.Element {
       }}
       onMouseDrag={(e: any) => {
         if (e.modifiers?.alt && isDragging) {
-          setPosX(dragAnchorX + (e.x - dragStartX));
-          setPosY(dragAnchorY + (e.y - dragStartY));
+          curX = dragAnchorX + (e.x - dragStartX);
+          curY = dragAnchorY + (e.y - dragStartY);
+          applyPos();
         }
       }}
       onMouseUp={() => { stopDrag(); }}
