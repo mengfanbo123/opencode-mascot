@@ -3,7 +3,7 @@ import { promisify } from "node:util";
 import { createRequire } from "node:module";
 import { join, dirname } from "node:path";
 import { homedir, tmpdir } from "node:os";
-import { openSync, closeSync, unlinkSync, statSync, writeSync, mkdtempSync, readdirSync, rmSync } from "node:fs";
+import { openSync, closeSync, unlinkSync, statSync, writeSync, mkdtempSync, readdirSync, rmSync, readFileSync, writeFileSync } from "node:fs";
 
 const execFileAsync = promisify(execFile);
 const require = createRequire(import.meta.url);
@@ -41,7 +41,7 @@ function getInstallDir(): string {
   }
 }
 
-async function installUpdate(targetDir: string): Promise<boolean> {
+async function installUpdate(targetDir: string, newVersion: string): Promise<boolean> {
   const tmpDir = mkdtempSync(join(tmpdir(), "mascot-update-"));
   try {
     await execFileAsync("npm", ["pack", `${PKG_NAME}@latest`, "--pack-destination", tmpDir], { timeout: 60000 });
@@ -53,6 +53,22 @@ async function installUpdate(targetDir: string): Promise<boolean> {
       ["-xzf", join(tmpDir, tgz), "-C", targetDir, "--strip-components=1", "--no-same-owner", "--no-same-permissions"],
       { timeout: 30000 },
     );
+
+    // 更新 opencode 插件管理清单的版本号，防止重启时回滚
+    let dir = targetDir;
+    for (let i = 0; i < 5; i++) {
+      dir = dirname(dir);
+      const manifestPath = join(dir, "package.json");
+      try {
+        const manifest = JSON.parse(readFileSync(manifestPath, "utf-8"));
+        if (manifest.dependencies && PKG_NAME in manifest.dependencies) {
+          manifest.dependencies[PKG_NAME] = newVersion;
+          writeFileSync(manifestPath, JSON.stringify(manifest, null, 2) + "\n");
+          break;
+        }
+      } catch {}
+    }
+
     return true;
   } catch {
     return false;
@@ -99,7 +115,7 @@ export async function checkAndUpdate(
 
   try {
     const targetDir = getInstallDir();
-    const success = await installUpdate(targetDir);
+    const success = await installUpdate(targetDir, latest);
     if (success) {
       onSuccess(latest);
     }
