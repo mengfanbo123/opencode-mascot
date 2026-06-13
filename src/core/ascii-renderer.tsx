@@ -419,7 +419,7 @@ export function createAnimatedRenderer(pack: MascotPack): {
       }
       setJumpOffset(step % 2 === 0 ? -2 : 0);
       const word = bubbles[Math.floor(Math.random() * bubbles.length)];
-      setCelebrate({ text: `${word} ᵘᵖ→ᵛ${newVersion}`, count: step });
+      setCelebrate({ text: `${word} ᵘᵖ→${toSuperscript(newVersion)}`, count: step });
       step++;
       celebrateTimers.push(setTimeout(tick, 600));
     };
