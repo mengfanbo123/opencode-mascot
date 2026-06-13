@@ -141,7 +141,7 @@ const yueerEffects: MascotPack["effects"] = {
       const ahogeIdx = result.findIndex((l) => l.includes("☆") || l.includes("★"));
       if (ahogeIdx >= 0) {
         const mark = result[ahogeIdx].includes("★") ? "★" : "☆";
-        result[ahogeIdx] = waveSide ? "     " + mark : "    " + mark;
+        result[ahogeIdx] = waveSide ? "   " + mark : "    " + mark;
       }
     }
 
