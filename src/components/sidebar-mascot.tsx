@@ -189,6 +189,7 @@ export function SidebarMascot(props: SidebarMascotProps): JSX.Element {
     <box
       overflow="hidden"
       width="100%"
+      height="100%"
       ref={(node: any) => {
         if (node) {
           setContainerWidth(node.width || 0);
