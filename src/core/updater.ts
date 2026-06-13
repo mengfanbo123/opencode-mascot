@@ -4,6 +4,7 @@ import { createRequire } from "node:module";
 import { join, dirname } from "node:path";
 import { homedir, tmpdir } from "node:os";
 import { openSync, closeSync, unlinkSync, statSync, writeSync, mkdtempSync, readdirSync, rmSync, readFileSync, writeFileSync } from "node:fs";
+import { log } from "./logger.js";
 
 const execFileAsync = promisify(execFile);
 const require = createRequire(import.meta.url);
@@ -106,19 +107,36 @@ export async function checkAndUpdate(
   currentVersion: string,
   onSuccess: (newVersion: string) => void,
 ): Promise<void> {
+  log("INFO", `checking: current=${currentVersion}`);
   const latest = await getLatestVersion();
-  if (!latest) return;
+  if (!latest) {
+    log("ERROR", "failed to fetch latest version");
+    return;
+  }
+  log("INFO", `latest=${latest}`);
 
-  if (compareVersions(latest, currentVersion) <= 0) return;
+  if (compareVersions(latest, currentVersion) <= 0) {
+    log("DEBUG", "already up to date");
+    return;
+  }
 
-  if (!acquireLock()) return;
+  if (!acquireLock()) {
+    log("WARN", "lock acquisition failed");
+    return;
+  }
 
   try {
     const targetDir = getInstallDir();
+    log("INFO", `installing to ${targetDir}`);
     const success = await installUpdate(targetDir, latest);
     if (success) {
+      log("INFO", `SUCCESS: ${currentVersion} -> ${latest}`);
       onSuccess(latest);
+    } else {
+      log("ERROR", "install FAILED");
     }
+  } catch (err) {
+    log("ERROR", `exception: ${err}`);
   } finally {
     releaseLock();
   }
