@@ -240,7 +240,12 @@ export function createAnimatedRenderer(pack: MascotPack): {
       if (currentState() === "idle" && !frameOverride() && walkStep === -1) {
         setJumpOffset(-2);
         setTimeout(() => setJumpOffset(-1), 1500);
-        setTimeout(() => setJumpOffset(0), 2000);
+        setTimeout(() => {
+          setJumpOffset(0);
+          if (Math.random() < 0.4) {
+            fallApart();
+          }
+        }, 2000);
       }
       if (currentState() !== "sleeping") {
         jumpTimeout = scheduleNextJump();
