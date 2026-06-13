@@ -67,6 +67,7 @@ export function createAnimatedRenderer(pack: MascotPack): {
   const [walkEnabled, setWalkEnabled] = createSignal(anim.walkEnabled ?? true);
   const [dragging, setDraggingSignal] = createSignal(false);
   const [celebrate, setCelebrate] = createSignal<{ text: string; count: number } | null>(null);
+  const [versionMsg, setVersionMsg] = createSignal<string | null>(null);
   const [flashColor, setFlashColor] = createSignal<string | null>(null);
   const [dragMsg, setDragMsg] = createSignal<string | null>(null);
   const [zzz, setZzz] = createSignal<string | null>(null);
@@ -105,7 +106,7 @@ export function createAnimatedRenderer(pack: MascotPack): {
   };
   const stopVersion = () => {
     if (versionTimer) { clearTimeout(versionTimer); versionTimer = null; }
-    setCelebrate(null);
+    setVersionMsg(null);
   };
   const stopScatter = () => {
     if (scatterTimer) { clearInterval(scatterTimer); scatterTimer = null; }
@@ -316,6 +317,7 @@ export function createAnimatedRenderer(pack: MascotPack): {
     zzz();
     scatter();
     bomb();
+    versionMsg();
 
     for (const [, [get]] of extraSignals) {
       get();
@@ -359,6 +361,7 @@ export function createAnimatedRenderer(pack: MascotPack): {
         {cel ? <box position="absolute" top={-1} left={0}><text fg={flashColor() ?? fg}>{cel.text}</text></box> : null}
         {dm ? <box position="absolute" top={-1} left={0}><text fg="#FF4081">{dm}</text></box> : null}
         {zzz() ? <box position="absolute" top={-1} left={0}><text fg={flashColor() ?? fg}>{zzz()}</text></box> : null}
+        {versionMsg() ? <box position="absolute" top={-1} left={0}><text fg={flashColor() ?? fg}>{versionMsg()}</text></box> : null}
         {bomb() ? (
           <box position="absolute" top={-2} left={3}>
             <text fg="#FF4444">{bomb()!.fuse}↘</text>
@@ -500,8 +503,8 @@ export function createAnimatedRenderer(pack: MascotPack): {
 
   const showVersion = (version: string) => {
     stopVersion();
-    setCelebrate({ text: `ᵛ${toSuperscript(version)}`, count: 0 });
-    versionTimer = setTimeout(() => { setCelebrate(null); versionTimer = null; }, 3000);
+    setVersionMsg(`ᵛ${toSuperscript(version)}`);
+    versionTimer = setTimeout(() => { setVersionMsg(null); versionTimer = null; }, 3000);
   };
 
   const scatterIn = () => {
