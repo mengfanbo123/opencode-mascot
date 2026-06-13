@@ -5,7 +5,6 @@ import type { JSX } from "@opentui/solid";
 import type { MascotPack, MascotState } from "../core/types";
 import { createAnimatedRenderer } from "../core/ascii-renderer";
 import { onCelebrate, onVersion } from "../core/celebration-bus";
-import { log } from "../core/logger";
 
 interface SidebarMascotProps {
   mascots: Record<string, MascotPack>;
@@ -89,7 +88,6 @@ export function SidebarMascot(props: SidebarMascotProps): JSX.Element {
   const checkEdge = () => {
     const cw = getCw();
     const x = posX();
-    log("EDGE", `checkEdge x=${x} cw=${cw} leftThreshold=${-(MASCOT_WIDTH - PEEK) + EDGE_THRESHOLD} rightThreshold=${cw - PEEK - EDGE_THRESHOLD}`);
     if (x <= -(MASCOT_WIDTH - PEEK) + EDGE_THRESHOLD) {
       hideSide = "left";
       startPeek();
@@ -189,12 +187,8 @@ export function SidebarMascot(props: SidebarMascotProps): JSX.Element {
 
   return (
     <box
-      position="absolute"
-      left={posX()}
-      top={posY()}
-      alignItems="center"
-      zIndex={zBoost() ? 9999 : 100}
-      flexDirection="column"
+      overflow="hidden"
+      width="100%"
       ref={(node: any) => {
         if (node) {
           setContainerWidth(node.width || 0);
@@ -205,45 +199,54 @@ export function SidebarMascot(props: SidebarMascotProps): JSX.Element {
           }
         }
       }}
-      onMouseDown={(e: any) => {
-        if (hideSide) { returnToView(); return; }
-
-        const now = Date.now();
-        if (now - lastClickTime < 300) {
-          switchToNext();
-          lastClickTime = 0;
-          return;
-        }
-        lastClickTime = now;
-
-        if (e.modifiers?.alt) {
-          dragStartX = e.x;
-          dragStartY = e.y;
-          dragAnchorX = posX();
-          dragAnchorY = posY();
-          isDragging = true;
-          renderers[currentName()].setDragging(true);
-          props.api.renderer.clearSelection();
-        }
-      }}
-      onMouseDrag={(e: any) => {
-        if (e.modifiers?.alt && isDragging) {
-          setPosX(clampX(dragAnchorX + (e.x - dragStartX)));
-          setPosY(clampY(dragAnchorY + (e.y - dragStartY)));
-        }
-      }}
-      onMouseUp={() => {
-        isDragging = false;
-        renderers[currentName()].setDragging(false);
-        checkEdge();
-      }}
-      onMouseDragEnd={() => {
-        isDragging = false;
-        renderers[currentName()].setDragging(false);
-        checkEdge();
-      }}
     >
-      {renderers[currentName()]?.element() ?? null}
+      <box
+        position="absolute"
+        left={posX()}
+        top={posY()}
+        alignItems="center"
+        zIndex={zBoost() ? 9999 : 100}
+        flexDirection="column"
+        onMouseDown={(e: any) => {
+          if (hideSide) { returnToView(); return; }
+
+          const now = Date.now();
+          if (now - lastClickTime < 300) {
+            switchToNext();
+            lastClickTime = 0;
+            return;
+          }
+          lastClickTime = now;
+
+          if (e.modifiers?.alt) {
+            dragStartX = e.x;
+            dragStartY = e.y;
+            dragAnchorX = posX();
+            dragAnchorY = posY();
+            isDragging = true;
+            renderers[currentName()].setDragging(true);
+            props.api.renderer.clearSelection();
+          }
+        }}
+        onMouseDrag={(e: any) => {
+          if (e.modifiers?.alt && isDragging) {
+            setPosX(clampX(dragAnchorX + (e.x - dragStartX)));
+            setPosY(clampY(dragAnchorY + (e.y - dragStartY)));
+          }
+        }}
+        onMouseUp={() => {
+          isDragging = false;
+          renderers[currentName()].setDragging(false);
+          checkEdge();
+        }}
+        onMouseDragEnd={() => {
+          isDragging = false;
+          renderers[currentName()].setDragging(false);
+          checkEdge();
+        }}
+      >
+        {renderers[currentName()]?.element() ?? null}
+      </box>
     </box>
   );
 }
