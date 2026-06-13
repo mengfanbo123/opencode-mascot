@@ -36,6 +36,9 @@ const DEFAULT_ANIM = {
 
 const WALK_PATH = [1, 2, 3, 4, 3, 2, 1, 0, -1, -2, -3, -2, -1, 0];
 
+const FLASH_COLORS = ["#FF006E", "#FFBE0B", "#8338EC", "#3A86FF", "#FB5607", "#06FFA5", "#FF4081", "#00E5FF"];
+const DRAG_MSGS = ["ᶠᵃⁿᵍ!..", "ᵏᵃⁱ~..", "ᵇᵘᶠᵃⁿᵍ~..", "ʷᵒ~..", "ⁿⁱᵘ~..", "ᵃᵃ~.."];
+
 function getFrameLines(pack: MascotPack, frameName: string): string[] {
   const frames = pack.frames as Record<string, string[] | undefined>;
   return frames[frameName] ?? frames["default"] ?? [];
@@ -72,6 +75,19 @@ export function createAnimatedRenderer(pack: MascotPack): {
   const [walkEnabled, setWalkEnabled] = createSignal(anim.walkEnabled ?? true);
   const [dragging, setDraggingSignal] = createSignal(false);
   const [celebrate, setCelebrate] = createSignal<{ text: string; count: number } | null>(null);
+  const [flashColor, setFlashColor] = createSignal<string | null>(null);
+  const [dragMsg, setDragMsg] = createSignal<string | null>(null);
+
+  let flashTimer: ReturnType<typeof setInterval> | null = null;
+  let dragMsgTimer: ReturnType<typeof setInterval> | null = null;
+
+  const stopFlash = () => {
+    if (flashTimer) { clearInterval(flashTimer); flashTimer = null; }
+  };
+  const stopDragMsg = () => {
+    if (dragMsgTimer) { clearInterval(dragMsgTimer); dragMsgTimer = null; }
+    setDragMsg(null);
+  };
 
   let idleSleepTimeout: ReturnType<typeof setTimeout> | null = null;
 
@@ -230,6 +246,8 @@ export function createAnimatedRenderer(pack: MascotPack): {
     if (idleSleepTimeout) clearTimeout(idleSleepTimeout);
     if (walkInterval) clearInterval(walkInterval);
     for (const t of effectTimers) clearInterval(t);
+    stopFlash();
+    stopDragMsg();
   });
 
   // ─── Render ───
@@ -241,6 +259,8 @@ export function createAnimatedRenderer(pack: MascotPack): {
     currentState();
     dragging();
     celebrate();
+    flashColor();
+    dragMsg();
 
     for (const [, [get]] of extraSignals) {
       get();
@@ -276,11 +296,14 @@ export function createAnimatedRenderer(pack: MascotPack): {
     const top = jumpOffset();
     const left = offset > 0 ? offset : 0;
     const cel = celebrate();
+    const dm = dragMsg();
+    const color = flashColor() ?? fg;
 
     return (
       <box flexDirection="column" left={left} top={top}>
-        {cel ? <text fg={fg}>{cel.text}</text> : null}
-        {renderLines(lines, fg)}
+        {cel ? <text fg={color}>{cel.text}</text> : null}
+        {dm ? <text fg="#FF4081">{dm}</text> : null}
+        {renderLines(lines, color)}
       </box>
     );
   };
@@ -297,6 +320,15 @@ export function createAnimatedRenderer(pack: MascotPack): {
       walkTimeout = scheduleNextWalk();
       jumpTimeout = scheduleNextJump();
     }
+
+    if (s === "thinking" || s === "busy") {
+      stopFlash();
+      flashTimer = setInterval(() => {
+        setFlashColor(FLASH_COLORS[Math.floor(Math.random() * FLASH_COLORS.length)]);
+      }, 120);
+    } else {
+      stopFlash();
+    }
   };
 
   const toggleWalk = () => {
@@ -312,13 +344,18 @@ export function createAnimatedRenderer(pack: MascotPack): {
   const setDragging = (v: boolean) => {
     setDraggingSignal(v);
     if (v) {
-      // 睡着时被拖拽 → 惊醒到 idle，切回 default 帧后手臂 ┃███┃ 才能被扇手渲染匹配
       if (currentState() === "sleeping") {
         setState("idle");
       }
       setJumpOffset(-1);
+      stopDragMsg();
+      setDragMsg(DRAG_MSGS[Math.floor(Math.random() * DRAG_MSGS.length)]);
+      dragMsgTimer = setInterval(() => {
+        setDragMsg(DRAG_MSGS[Math.floor(Math.random() * DRAG_MSGS.length)]);
+      }, 800);
     } else {
       setJumpOffset(0);
+      stopDragMsg();
     }
   };
 
