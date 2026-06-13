@@ -22,7 +22,7 @@ export function HomeMascot(props: HomeMascotProps): JSX.Element {
   const cw = (typeof process !== "undefined" && process.stdout?.columns) || 80;
 
   const initX = Math.floor((Math.random() - 0.5) * Math.max(0, cw - 20));
-  const initY = -(Math.floor(Math.random() * 4) + 1);
+  const initY = 0;
 
   const [currentName, setCurrentName] = createSignal(initialName);
   const [zBoost, setZBoost] = createSignal(false);
