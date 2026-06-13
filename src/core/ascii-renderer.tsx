@@ -318,7 +318,7 @@ export function createAnimatedRenderer(pack: MascotPack): {
       <box flexDirection="column" left={left} top={top}>
         {cel ? <text fg={flashColor() ?? fg}>{cel.text}</text> : null}
         {dm ? <text fg="#FF4081">{dm}</text> : null}
-        <box flexDirection="column">
+        <box flexDirection="column" alignItems="flex-start">
           {lines.map((line: string) => (
             <text fg={flashColor() ?? fg}>{line}</text>
           ))}

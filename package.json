@@ -1,6 +1,6 @@
 {
   "name": "@mingxy/opencode-mascot",
-  "version": "0.3.4",
+  "version": "0.3.5",
   "description": "OpenCode TUI mascot plugin framework - customizable ASCII mascots for your terminal",
   "author": "mingxy",
   "license": "MIT",
