@@ -5,7 +5,6 @@ import type { JSX } from "@opentui/solid";
 import type { MascotPack } from "../core/types";
 import { createAnimatedRenderer } from "../core/ascii-renderer";
 import { onCelebrate, onVersion } from "../core/celebration-bus";
-import { log } from "../core/logger";
 
 interface HomeMascotProps {
   mascots: Record<string, MascotPack>;
@@ -20,9 +19,11 @@ export function HomeMascot(props: HomeMascotProps): JSX.Element {
   const names = Object.keys(props.mascots);
   const initialName = names[Math.floor(Math.random() * names.length)];
 
+  const cw = (typeof process !== "undefined" && process.stdout?.columns) || 80;
+
   const [currentName, setCurrentName] = createSignal(initialName);
-  const [posX, setPosX] = createSignal(0);
-  const [posY, setPosY] = createSignal(0);
+  const [posX, setPosX] = createSignal(Math.floor(Math.random() * Math.max(0, cw - 20)));
+  const [posY, setPosY] = createSignal(Math.floor(Math.random() * 3));
   const [zBoost, setZBoost] = createSignal(false);
   let dragStartX = 0;
   let dragStartY = 0;
@@ -66,7 +67,6 @@ export function HomeMascot(props: HomeMascotProps): JSX.Element {
       zIndex={zBoost() ? 9999 : 100}
       flexDirection="column"
       onMouseDown={(e: any) => {
-        log("MOUSE", `down x=${e.x} y=${e.y} alt=${!!e.modifiers?.alt} btn=${e.button}`);
         const now = Date.now();
         if (now - lastClickTime < 300) {
           switchToNext();
@@ -81,22 +81,18 @@ export function HomeMascot(props: HomeMascotProps): JSX.Element {
           dragAnchorX = posX();
           dragAnchorY = posY();
           isDragging = true;
-          log("DRAG", `start anchorX=${dragAnchorX} anchorY=${dragAnchorY} startX=${dragStartX} startY=${dragStartY}`);
           renderers[currentName()].setDragging(true);
           props.api.renderer.clearSelection();
         }
       }}
       onMouseDrag={(e: any) => {
-        if (isDragging) {
-          log("MOUSE", `drag x=${e.x} y=${e.y} alt=${!!e.modifiers?.alt} dx=${e.x - dragStartX} dy=${e.y - dragStartY}`);
-        }
         if (e.modifiers?.alt && isDragging) {
           setPosX(dragAnchorX + (e.x - dragStartX));
           setPosY(dragAnchorY + (e.y - dragStartY));
         }
       }}
-      onMouseUp={() => { log("MOUSE", `up isDragging=${isDragging}`); stopDrag(); }}
-      onMouseDragEnd={() => { log("MOUSE", `dragEnd isDragging=${isDragging}`); stopDrag(); }}
+      onMouseUp={() => { stopDrag(); }}
+      onMouseDragEnd={() => { stopDrag(); }}
     >
       {renderers[currentName()]?.element() ?? null}
     </box>
