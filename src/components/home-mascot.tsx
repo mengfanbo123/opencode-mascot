@@ -49,13 +49,16 @@ export function HomeMascot(props: HomeMascotProps): JSX.Element {
   });
 
   return (
-    <box
-      left={posX()}
-      top={posY()}
-      alignItems="center"
-      zIndex={100}
-      flexDirection="column"
-      onMouseDown={(e: any) => {
+    <box flexDirection="column" alignItems="center">
+      <box height={5} width={10} />
+      <box
+        position="absolute"
+        left={posX()}
+        top={posY()}
+        alignItems="center"
+        zIndex={100}
+        flexDirection="column"
+        onMouseDown={(e: any) => {
         const now = Date.now();
         if (now - lastClickTime < 300) {
           switchToNext();
@@ -100,6 +103,7 @@ export function HomeMascot(props: HomeMascotProps): JSX.Element {
       }}
     >
       {renderers[currentName()]?.element() ?? null}
+      </box>
     </box>
   );
 }
