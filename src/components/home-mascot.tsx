@@ -52,7 +52,7 @@ export function HomeMascot(props: HomeMascotProps): JSX.Element {
       height={6}
       width={16}
       alignItems="center"
-      zIndex={100}
+      zIndex={9999}
       flexDirection="column"
       ref={(node: any) => { boxRef = node; }}
       onMouseDown={(e: any) => {
