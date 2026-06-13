@@ -145,7 +145,7 @@ const yueerEffects: MascotPack["effects"] = {
     if (stompActive) {
       const legIdx = result.length - 1;
       if (legIdx >= 0) {
-        result[legIdx] = stompAlt ? "  ╲ ╱  " : "  ╱ ╲  ";
+        result[legIdx] = stompAlt ? "    ║ _   " : "    _ ║   ";
       }
     }
 
