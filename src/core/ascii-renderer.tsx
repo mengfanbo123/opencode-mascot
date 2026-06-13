@@ -446,7 +446,7 @@ export function createAnimatedRenderer(pack: MascotPack): {
     bounceTimers.push(setTimeout(() => {
       setJumpOffset(0);
       bounceTimers = [];
-      if (Math.random() < 0.3) {
+      if (Math.random() < 0.5) {
         fallApart();
       }
     }, 450));

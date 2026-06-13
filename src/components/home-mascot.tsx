@@ -20,10 +20,9 @@ export function HomeMascot(props: HomeMascotProps): JSX.Element {
   const initialName = names[Math.floor(Math.random() * names.length)];
 
   const cw = (typeof process !== "undefined" && process.stdout?.columns) || 80;
-  const ch = (typeof process !== "undefined" && process.stdout?.rows) || 24;
 
-  const initX = Math.floor(Math.random() * Math.max(0, cw - 12));
-  const initY = -(Math.floor(Math.random() * Math.min(ch - 8, 15)) + 3);
+  const initX = Math.floor((Math.random() - 0.5) * Math.max(0, cw - 20));
+  const initY = -(Math.floor(Math.random() * 8) + 2);
 
   const [currentName, setCurrentName] = createSignal(initialName);
   const [zBoost, setZBoost] = createSignal(false);
