@@ -138,6 +138,11 @@ const yueerEffects: MascotPack["effects"] = {
       if (faceIdx >= 0) {
         result[faceIdx] = waveSide ? "╲( ^ω^ )╱ " : " ~( ^ω^ )~";
       }
+      const ahogeIdx = result.findIndex((l) => l.includes("☆") || l.includes("★"));
+      if (ahogeIdx >= 0) {
+        const mark = result[ahogeIdx].includes("★") ? "★" : "☆";
+        result[ahogeIdx] = waveSide ? "     " + mark : "    " + mark;
+      }
     }
 
     if (stompActive) {
