@@ -20,7 +20,8 @@ export function HomeMascot(props: HomeMascotProps): JSX.Element {
   const initialName = names[Math.floor(Math.random() * names.length)];
 
   const [currentName, setCurrentName] = createSignal(initialName);
-  let boxRef: any = null;
+  const [posX, setPosX] = createSignal(0);
+  const [posY, setPosY] = createSignal(0);
   let dragStartX = 0;
   let dragStartY = 0;
   let dragAnchorX = 0;
@@ -47,12 +48,18 @@ export function HomeMascot(props: HomeMascotProps): JSX.Element {
     renderers[currentName()].showVersion(version);
   });
 
+  const stopDrag = () => {
+    isDragging = false;
+    renderers[currentName()].setDragging(false);
+  };
+
   return (
     <box
+      left={posX()}
+      top={posY()}
       alignItems="center"
       zIndex={9999}
       flexDirection="column"
-      ref={(node: any) => { boxRef = node; }}
       onMouseDown={(e: any) => {
         const now = Date.now();
         if (now - lastClickTime < 300) {
@@ -62,35 +69,30 @@ export function HomeMascot(props: HomeMascotProps): JSX.Element {
         }
         lastClickTime = now;
 
-        if (e.modifiers?.alt && boxRef) {
+        if (e.modifiers?.alt) {
           dragStartX = e.x;
           dragStartY = e.y;
-          dragAnchorX = boxRef.translateX || 0;
-          dragAnchorY = boxRef.translateY || 0;
+          dragAnchorX = posX();
+          dragAnchorY = posY();
           isDragging = true;
           renderers[currentName()].setDragging(true);
+          e.preventDefault();
+          e.stopPropagation();
+          props.api.renderer.clearSelection();
         }
       }}
       onMouseDrag={(e: any) => {
-        if (e.modifiers?.alt && isDragging && boxRef) {
-          boxRef.translateX = dragAnchorX + (e.x - dragStartX);
-          boxRef.translateY = dragAnchorY + (e.y - dragStartY);
+        if (e.modifiers?.alt && isDragging) {
+          setPosX(dragAnchorX + (e.x - dragStartX));
+          setPosY(dragAnchorY + (e.y - dragStartY));
+          e.preventDefault();
+          e.stopPropagation();
+          props.api.renderer.clearSelection();
         }
       }}
-      onMouseUp={() => {
-        isDragging = false;
-        renderers[currentName()].setDragging(false);
-      }}
-      onMouseDragEnd={() => {
-        isDragging = false;
-        renderers[currentName()].setDragging(false);
-      }}
-      onMouseOut={() => {
-        if (isDragging) {
-          isDragging = false;
-          renderers[currentName()].setDragging(false);
-        }
-      }}
+      onMouseUp={() => { stopDrag(); }}
+      onMouseDragEnd={() => { stopDrag(); }}
+      onMouseOut={() => { stopDrag(); }}
     >
       {renderers[currentName()]?.element() ?? null}
     </box>
