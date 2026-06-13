@@ -5,6 +5,7 @@ import type { JSX } from "@opentui/solid";
 import type { MascotPack, MascotState } from "../core/types";
 import { createAnimatedRenderer } from "../core/ascii-renderer";
 import { onCelebrate, onVersion } from "../core/celebration-bus";
+import { log } from "../core/logger";
 
 interface SidebarMascotProps {
   mascots: Record<string, MascotPack>;
@@ -88,6 +89,7 @@ export function SidebarMascot(props: SidebarMascotProps): JSX.Element {
   const checkEdge = () => {
     const cw = getCw();
     const x = posX();
+    log("EDGE", `checkEdge x=${x} cw=${cw} leftThreshold=${-(MASCOT_WIDTH - PEEK) + EDGE_THRESHOLD} rightThreshold=${cw - PEEK - EDGE_THRESHOLD}`);
     if (x <= -(MASCOT_WIDTH - PEEK) + EDGE_THRESHOLD) {
       hideSide = "left";
       startPeek();
