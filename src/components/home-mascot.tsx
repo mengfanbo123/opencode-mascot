@@ -59,7 +59,6 @@ export function HomeMascot(props: HomeMascotProps): JSX.Element {
         position="absolute"
         left={posX()}
         top={posY()}
-        alignItems="center"
         flexDirection="column"
         onMouseDown={(e: any) => {
           const now = Date.now();
