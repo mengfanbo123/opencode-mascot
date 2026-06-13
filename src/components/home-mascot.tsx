@@ -54,45 +54,48 @@ export function HomeMascot(props: HomeMascotProps): JSX.Element {
   };
 
   return (
-    <box height={5} zIndex={9999}>
+    <box
+      height={5}
+      zIndex={9999}
+      onMouseDown={(e: any) => {
+        const now = Date.now();
+        if (now - lastClickTime < 300) {
+          switchToNext();
+          lastClickTime = 0;
+          return;
+        }
+        lastClickTime = now;
+
+        if (e.modifiers?.alt) {
+          dragStartX = e.x;
+          dragStartY = e.y;
+          dragAnchorX = posX();
+          dragAnchorY = posY();
+          isDragging = true;
+          renderers[currentName()].setDragging(true);
+          e.preventDefault();
+          e.stopPropagation();
+          props.api.renderer.clearSelection();
+        }
+      }}
+      onMouseDrag={(e: any) => {
+        if (e.modifiers?.alt && isDragging) {
+          setPosX(dragAnchorX + (e.x - dragStartX));
+          setPosY(dragAnchorY + (e.y - dragStartY));
+          e.preventDefault();
+          e.stopPropagation();
+          props.api.renderer.clearSelection();
+        }
+      }}
+      onMouseUp={() => { stopDrag(); }}
+      onMouseDragEnd={() => { stopDrag(); }}
+      onMouseOut={() => { stopDrag(); }}
+    >
       <box
         position="absolute"
         left={posX()}
         top={posY()}
         flexDirection="column"
-        onMouseDown={(e: any) => {
-          const now = Date.now();
-          if (now - lastClickTime < 300) {
-            switchToNext();
-            lastClickTime = 0;
-            return;
-          }
-          lastClickTime = now;
-
-          if (e.modifiers?.alt) {
-            dragStartX = e.x;
-            dragStartY = e.y;
-            dragAnchorX = posX();
-            dragAnchorY = posY();
-            isDragging = true;
-            renderers[currentName()].setDragging(true);
-            e.preventDefault();
-            e.stopPropagation();
-            props.api.renderer.clearSelection();
-          }
-        }}
-        onMouseDrag={(e: any) => {
-          if (e.modifiers?.alt && isDragging) {
-            setPosX(dragAnchorX + (e.x - dragStartX));
-            setPosY(dragAnchorY + (e.y - dragStartY));
-            e.preventDefault();
-            e.stopPropagation();
-            props.api.renderer.clearSelection();
-          }
-        }}
-        onMouseUp={() => { stopDrag(); }}
-        onMouseDragEnd={() => { stopDrag(); }}
-        onMouseOut={() => { stopDrag(); }}
       >
         {renderers[currentName()]?.element() ?? null}
       </box>
