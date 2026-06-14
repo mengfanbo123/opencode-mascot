@@ -23,8 +23,8 @@ const DEFAULT_STATE_MAP: Partial<Record<MascotState, string>> = {
   idle: "yueer",
   happy: "yueer",
   thinking: "yueer",
-  busy: "baozi",
-  sleeping: "baozi",
+  busy: "yueer",
+  sleeping: "yueer",
 };
 
 const MASCOT_WIDTH = 10;
@@ -37,7 +37,9 @@ export function SidebarMascot(props: SidebarMascotProps): JSX.Element {
   const initialName =
     props.initialMascot && props.mascots[props.initialMascot]
       ? props.initialMascot
-      : names[Math.floor(Math.random() * names.length)];
+      : props.mascots["yueer"]
+      ? "yueer"
+      : names[0];
 
   const [currentName, setCurrentName] = createSignal(initialName);
   const [posX, setPosX] = createSignal(20);

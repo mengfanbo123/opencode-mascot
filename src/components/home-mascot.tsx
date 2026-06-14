@@ -17,7 +17,7 @@ interface HomeMascotProps {
 
 export function HomeMascot(props: HomeMascotProps): JSX.Element {
   const names = Object.keys(props.mascots);
-  const initialName = names[Math.floor(Math.random() * names.length)];
+  const initialName = props.mascots["yueer"] ? "yueer" : names[0];
 
   const cw = (typeof process !== "undefined" && process.stdout?.columns) || 80;
 
