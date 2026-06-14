@@ -2,6 +2,22 @@
 
 本项目版本号遵循 semver。每个版本列出主要变更。
 
+## [0.5.8] - 2025-06-14
+
+### Fixed
+- README 跺脚动画描述与代码一致（单脚跺，左脚固定右脚抬起）
+- 移除 CI workflow（账号计费锁定 + 国内卡无法支付 GitHub）
+
+## [0.5.7] - 2025-06-14
+
+### Added
+- LICENSE 文件（MIT）
+- CONTRIBUTING.md
+- CHANGELOG.md
+
+### Removed
+- CI workflow（GitHub Actions typecheck）——账号计费锁定，暂停 CI
+
 ## [0.5.6] - 2025-06-14
 
 ### Changed
