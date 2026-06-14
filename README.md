@@ -18,12 +18,13 @@ Customizable ASCII mascots that breathe, walk, sleep, get launched across the sc
 
 ## ✨ Features
 
-### 🎭 Built-in Characters (2)
+### 🎭 Built-in Characters (3)
 
 | Character | Description | Color |
 |-----------|-------------|-------|
 | **yueer** | Purple-haired girl with an ahoge, tsundere style, default mascot | `#8B7EB8` lavender |
 | **baozi** | A steaming hot bun, warm and cozy | `#D4885A` warm orange |
+| **cat** | Orange tabby cat — purring, kneading, tail-swishing | `#FFA500` orange |
 
 Each character includes **5 expression frames**: default / blink / happy / thinking / sleeping
 
@@ -61,6 +62,17 @@ Each character includes **5 expression frames**: default / blink / happy / think
 | 14 | Steam | Continuous | 4 steam patterns rotate |
 | 15 | Alien text bubble | busy/thinking | 12 alien-text phrases rotate |
 | 16 | Drag panic | While dragging | `( °□° )` |
+
+**cat exclusive:**
+
+| # | Animation | Trigger | Effect |
+|---|-----------|---------|--------|
+| 17 | Tail swish | Every 0.6s | Tail `|_)` ↔ `|~)` |
+| 18 | Ear twitch | Random (20% / 2.5s) | Ear `/\` → `/╲` |
+| 19 | Pupil dilate | Random (15% / 4s, idle) | Eyes `o.o` → `@.@` |
+| 20 | Kneading | idle state | Paws alternate `/||  |\` ↔ `/|  ||\` |
+| 21 | Purr bubble | busy/thinking | 12 purr phrases rotate (purrr~/mrrrow~/nyaa~) |
+| 22 | Drag bristle | While dragging | Ears bristle `/╲╱╲` + shocked face `>.<` |
 
 ---
 
@@ -165,7 +177,8 @@ opencode-mascot/
 │   │   └── sidebar-mascot.tsx       # Work page mascot (peek-a-boo)
 │   └── builtins/
 │       ├── yueer/                   # yueer (frames + effects)
-│       └── baozi/                   # baozi (frames + effects)
+│       ├── baozi/                   # baozi (frames + effects)
+│       └── cat/                     # cat (frames + effects)
 ```
 
 ## 🎨 Custom Characters
@@ -205,16 +218,16 @@ All built-in animations (blink/breath/walk/jump/sleep/drag/color-flash/bomb/fall
 
 | Category | Count |
 |----------|-------|
-| Built-in characters | 2 |
+| Built-in characters | 3 |
 | Expression frames | 5 / character |
-| Auto animations | 16 |
+| Auto animations | 22 |
 | Interactions | 5 |
 | Peek-a-boo behaviors | 3 |
 | Random events | 3 |
 | Alien text phrases | 24 (12/character) |
 | Flash colors | 8 |
 | Drag alien text | 6 |
-| **Total** | **33+** |
+| **Total** | **39+** |
 
 ## 📄 License
 

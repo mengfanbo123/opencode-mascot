@@ -1,10 +1,12 @@
 import type { MascotPack } from "./types"
 import { yueerPack } from "../builtins/yueer"
 import { baoziPack } from "../builtins/baozi"
+import { catPack } from "../builtins/cat"
 
 const BUILTINS: Record<string, MascotPack> = {
   yueer: yueerPack,
   baozi: baoziPack,
+  cat: catPack,
 }
 
 const ALL_NAMES = Object.keys(BUILTINS)
