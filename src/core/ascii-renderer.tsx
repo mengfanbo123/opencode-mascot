@@ -46,6 +46,7 @@ function getFrameLines(pack: MascotPack, frameName: string): string[] {
 
 export function createAnimatedRenderer(pack: MascotPack): {
   element: () => JSX.Element;
+  getState: () => MascotState;
   setState: (s: MascotState) => void;
   toggleWalk: () => void;
   setDragging: (v: boolean) => void;
@@ -573,5 +574,5 @@ export function createAnimatedRenderer(pack: MascotPack): {
     }, 700);
   };
 
-  return { element, setState, toggleWalk, setDragging, celebrateUpdate, bounce, showVersion, scatterIn, explode };
+  return { element, getState: currentState, setState, toggleWalk, setDragging, celebrateUpdate, bounce, showVersion, scatterIn, explode };
 }

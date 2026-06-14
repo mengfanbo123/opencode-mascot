@@ -2,6 +2,12 @@
 
 本项目版本号遵循 semver。每个版本列出主要变更。
 
+## [0.5.9] - 2025-06-14
+
+### Fixed
+- sidebar 躲猫猫恢复后跳跃+跺脚冲突：bounce 只在 idle 状态触发，不再和 busy/thinking 动画叠加
+- returnToView 加 stopReturn 防重复调用导致多个 interval 竞争
+
 ## [0.5.8] - 2025-06-14
 
 ### Fixed

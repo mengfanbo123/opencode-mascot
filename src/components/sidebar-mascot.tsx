@@ -117,6 +117,7 @@ export function SidebarMascot(props: SidebarMascotProps): JSX.Element {
   const returnToView = () => {
     if (!hideSide) return;
     stopPeek();
+    stopReturn();
     const cw = getCw();
     const cur = posX();
     const targetX = hideSide === "left" ? 0 : Math.max(0, cw - MASCOT_WIDTH);
@@ -128,7 +129,10 @@ export function SidebarMascot(props: SidebarMascotProps): JSX.Element {
         setPosX(targetX);
         stopReturn();
         hideSide = null;
-        renderers[currentName()].bounce();
+        const r = renderers[currentName()];
+        if (r.getState() === "idle") {
+          r.bounce();
+        }
         return;
       }
       setPosX(now + step);
