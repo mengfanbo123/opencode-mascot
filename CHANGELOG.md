@@ -10,9 +10,11 @@
 
 ### Added
 - LICENSE 文件（MIT）
-- CI workflow（GitHub Actions typecheck）
 - CONTRIBUTING.md
 - CHANGELOG.md
+
+### Removed
+- CI workflow（GitHub Actions typecheck）——账号计费锁定，暂停 CI
 
 ## [0.5.5] - 2025-06-14
 

@@ -133,6 +133,7 @@
 - **@opentui/solid** — SolidJS 响应式 TUI 渲染
 - **@opencode-ai/plugin** — OpenCode 插件 API
 - 零运行时依赖（peer dep only）
+- TypeScript 类型检查通过
 
 ## 📂 项目结构
 

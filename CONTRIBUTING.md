@@ -16,7 +16,7 @@ npm install
 npm run typecheck    # TypeScript 类型检查（唯一的验证命令）
 ```
 
-本项目没有构建步骤——源码直接发布到 npm。typecheck 通过即可。
+本项目没有构建步骤——源码直接发布到 npm。提交前确保 `npm run typecheck` 通过即可。
 
 ## 项目结构
 
