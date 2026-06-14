@@ -6,6 +6,8 @@
 
 [English](./README.md) | [简体中文](./README_zh-CN.md)
 
+![demo](./assets/demo.gif)
+
 ## ✨ 特色
 
 ### 🎭 内置形象（2个）
