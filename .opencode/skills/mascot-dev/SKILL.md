@@ -55,6 +55,15 @@ codegraph sync
 
 **没有 build 命令**——源码直接发布到 npm。
 
+## 发版规则
+
+**只有 `src/` 或 `tui.tsx` 代码逻辑变更才发版。**
+
+| 改动类型 | 发版？ | 操作 |
+|---|---|---|
+| `src/` 或 `tui.tsx` 逻辑变更 | ✅ 发版 | 完整发版流程 |
+| 纯文档（README/CHANGELOG/CONTRIBUTING/CI/.gitignore） | ❌ 不发版 | 只 commit + push |
+
 ## 发版流程（严格遵守顺序）
 
 ```

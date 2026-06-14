@@ -1,123 +1,127 @@
 # 🐱 opencode-mascot
 
-> OpenCode TUI 吉祥物插件框架 — 让你的终端活起来
+> OpenCode TUI mascot plugin framework — bring your terminal to life
 
-可自定义的 ASCII 吉祥物，在你的 OpenCode 终端里呼吸、走路、睡觉、被打飞、被炸碎，然后默默爬回来重新组装。
+Customizable ASCII mascots that breathe, walk, sleep, get launched across the screen, blown up by falling bombs, then quietly reassemble themselves.
 
-## ✨ 特色
-
-### 🎭 内置形象（2个）
-
-| 形象 | 描述 | 颜色 |
-|------|------|------|
-| **月儿** (yueer) | 紫发呆毛女孩，傲娇风格，默认形象 | `#8B7EB8` 淡紫 |
-| **包子** (baozi) | 热气腾腾的包子，温暖治愈 | `#D4885A` 暖橙 |
-
-每个形象包含 **5 种表情帧**：default / blink / happy / thinking / sleeping
+[English](./README.md) | [简体中文](./README_zh-CN.md)
 
 ---
 
-### 🎬 自动动画（16种）
+## ✨ Features
 
-**Renderer 内置（所有形象共享）：**
+### 🎭 Built-in Characters (2)
 
-| # | 动画 | 触发 | 效果 |
-|---|------|------|------|
-| 1 | 眨眼 | 随机（30%概率/2.5s） | 切换 blink 帧 150ms |
-| 2 | 随机表情 | 每 8s | idle 时随机切换表情 |
-| 3 | 呼吸 | 每 3s | 行向上偏移一格，模拟呼吸起伏 |
-| 4 | 走路 | 每 20-40s | 左右晃动（14步路径） |
-| 5 | 跳跃 | 每 20-40s | 弹跳 -2→-1→0 |
-| 6 | 睡眠 | idle 90-120s | 自动闭眼 + 火星文 Zzz |
+| Character | Description | Color |
+|-----------|-------------|-------|
+| **yueer** | Purple-haired girl with an ahoge, tsundere style, default mascot | `#8B7EB8` lavender |
+| **baozi** | A steaming hot bun, warm and cozy | `#D4885A` warm orange |
 
-**月儿专属（yueer effects）：**
-
-| # | 动画 | 触发 | 效果 |
-|---|------|------|------|
-| 7 | 呆毛闪烁 | 随机（25%/1.5s） | ☆ ↔ ★ |
-| 8 | 开心晃头 | happy 状态 | 脸左右摆 + 呆毛同步偏移 |
-| 9 | 思考跺脚 | thinking 状态 | 左脚固定 ║，右脚 ║↔_ 单脚跺 |
-| 10 | 思考变脸 | thinking 状态 | 6种表情轮换（o_o / O_O / >_o / o_< / ⊙_⊙ / ◔_◔） |
-| 11 | 火星文气泡 | busy/thinking | 12条上标火星文轮换 |
-| 12 | 拖拽扇手 | 拖拽中 | 手臂 ┃███┃ ↔ ╱███╲ |
-| 13 | 跳跃扇手 | 跳跃中 | 同上 |
-
-**包子专属（baozi effects）：**
-
-| # | 动画 | 触发 | 效果 |
-|---|------|------|------|
-| 14 | 冒热气 | 持续 | 4种蒸汽图案轮换 |
-| 15 | 火星文气泡 | busy/thinking | 12条上标火星文轮换 |
-| 16 | 拖拽惊恐 | 拖拽中 | `( °□° )` |
+Each character includes **5 expression frames**: default / blink / happy / thinking / sleeping
 
 ---
 
-### 🖱️ 交互能力（5种）
+### 🎬 Automatic Animations (16)
 
-| # | 操作 | 效果 |
-|---|------|------|
-| 1 | **Alt + 鼠标拖拽** | 自由移动吉祥物位置（首页 + 工作页） |
-| 2 | **双击切换** | 300ms 内双击 → 循环切换形象 |
-| 3 | **拖拽变色** | 拖拽时身体 8 种高亮色 100ms 快速闪换，松手定格 |
-| 4 | **拖拽火星文** | 拖拽时头顶粉色"放开我"火星文轮换（ᶠᵃⁿᵍ/ᵏᵃⁱ/ᵇᵘᶠᵃⁿᵍ...） |
-| 5 | **拖拽惊恐** | 拖拽时 `( °□° )` 表情 + 手臂疯狂扇动 |
+**Built-in (shared by all characters):**
 
----
+| # | Animation | Trigger | Effect |
+|---|-----------|---------|--------|
+| 1 | Blink | Random (30% / 2.5s) | Switch to blink frame for 150ms |
+| 2 | Random expression | Every 8s | Cycles expressions while idle |
+| 3 | Breathing | Every 3s | Lines shift up one row, simulating breathing |
+| 4 | Walking | Every 20-40s | Sways left and right (14-step path) |
+| 5 | Jumping | Every 20-40s | Bounces -2 → -1 → 0 |
+| 6 | Sleep | Idle 90-120s | Auto-closed eyes + alien-text Zzz |
 
-### 🫣 躲猫猫系统（工作页）
+**yueer exclusive:**
 
-| # | 动作 | 效果 |
-|---|------|------|
-| 1 | 拖到左边缘 | 吉祥物藏起来，只露 2 格 |
-| 2 | 松手贴边 | 自动进入探头循环（每 1.2s 偷偷多露 2 格再缩回） |
-| 3 | 点击 / 开始工作 | 从边界滑回 + bounce 弹跳归位 |
+| # | Animation | Trigger | Effect |
+|---|-----------|---------|--------|
+| 7 | Ahoge sparkle | Random (25% / 1.5s) | ☆ ↔ ★ |
+| 8 | Happy head sway | happy state | Face sways left/right + ahoge synced |
+| 9 | Thinking foot stomp | thinking state | Left foot fixed, right foot stomps ║↔_ |
+| 10 | Thinking face shift | thinking state | 6 expressions rotate (o_o / O_O / >_o / o_< / ⊙_⊙ / ◔_◔) |
+| 11 | Alien text bubble | busy/thinking | 12 alien-text phrases rotate |
+| 12 | Drag arm flail | While dragging | Arms ┃███┃ ↔ ╱███╲ |
+| 13 | Jump arm flail | While jumping | Same as above |
 
----
+**baozi exclusive:**
 
-### 💥 随机意外事件（3种）
-
-| # | 事件 | 触发 | 效果 |
-|---|------|------|------|
-| 1 | **摔坏** | 跳跃落地 40% / bounce 归位 50% | 行散开倒地 → 1.5s 后自动重组 |
-| 2 | **天降炸弹** | idle 时 10% 概率替代走路 | 引线 ✦/◌ 燃烧 + 倒计时 ³·→²·→¹· → 白闪爆炸 + `ᵇᵒᵒᵐ~` → 重组 |
-| 3 | **打散聚合** | 启动 / 切到工作页 | 行从随机位置 15 帧线性插值聚合归位 |
-
----
-
-### 🔄 自动更新
-
-- 启动时检测 npm 最新版 → semver 比较 → `npm pack` 下载 → `tar` 解压覆盖
-- 文件锁防并发（30s 过期自动清理）
-- 同步更新 opencode 插件管理清单版本号，防止重启回滚
-- 更新成功后吉祥物跳跃庆祝 + 火星文版本号 `ᵘᵖ→⁰·⁵·¹`
+| # | Animation | Trigger | Effect |
+|---|-----------|---------|--------|
+| 14 | Steam | Continuous | 4 steam patterns rotate |
+| 15 | Alien text bubble | busy/thinking | 12 alien-text phrases rotate |
+| 16 | Drag panic | While dragging | `( °□° )` |
 
 ---
 
-### 🎵 状态联动
+### 🖱️ Interactions (5)
 
-| 触发 | 效果 |
-|------|------|
-| session busy | 火星文气泡 + 8色高亮闪烁 |
-| session thinking | 跺脚 + 变脸 + 火星文气泡 |
-| session happy | 晃头庆祝 3s |
-| session idle 超时 | 自动睡觉 + 火星文 Zzz（`zᶻ...` → `zᶻᶻ...` → `zᶻᶻᶻ...`） |
-| 拖拽睡眠中 | 惊醒到 idle + 扇手惊恐 |
-
-> 默认所有状态使用月儿形象。可通过右键双击手动切换包子。
+| # | Action | Effect |
+|---|--------|--------|
+| 1 | **Alt + drag** | Freely move the mascot anywhere |
+| 2 | **Double-click** | Cycle through characters (within 300ms) |
+| 3 | **Drag color flash** | Body flashes through 8 highlight colors at 100ms, locks on release |
+| 4 | **Drag alien text** | Pink "let go of me" alien text appears above head while dragging |
+| 5 | **Drag panic** | `( °□° )` face + arms flailing while dragging |
 
 ---
 
-### 🚀 启动效果
+### 🫣 Peek-a-Boo System (Work Page)
 
-- 启动 2s 后头顶显示火星文版本号 `ᵛ⁰·⁵·¹`（3秒）
-- 首页吉祥物水平随机位置出现
-- 工作页首次对话 / `opencode -c` 时打散聚合动画
+| # | Action | Effect |
+|---|--------|--------|
+| 1 | Drag to left edge | Mascot hides, only 2 rows visible |
+| 2 | Release at edge | Auto peek cycle (peeks 2 more rows every 1.2s, then retreats) |
+| 3 | Click / start working | Slides back from edge + bounce |
 
 ---
 
-## 📦 安装
+### 💥 Random Events (3)
 
-在 `~/.config/opencode/tui.json` 中添加插件：
+| # | Event | Trigger | Effect |
+|---|-------|---------|--------|
+| 1 | **Fall apart** | Jump landing 40% / bounce 50% | Lines scatter → reassemble after 1.5s |
+| 2 | **Bomb drop** | 10% chance replacing walk (idle) | Fuse burns ✦/◌ + countdown ³·→²·→¹· → white flash explosion + `ᵇᵒᵒᵐ~` → reassemble |
+| 3 | **Scatter & assemble** | Startup / switch to work page | Lines start from random positions, 15-frame linear interpolation to home |
+
+---
+
+### 🔄 Auto-Update
+
+- Checks npm latest version on startup → semver compare → `npm pack` download → `tar` extract overwrite
+- File lock prevents concurrency (30s expiry auto-cleanup)
+- Syncs opencode plugin manifest version to prevent rollback on restart
+- On successful update: mascot jumps to celebrate + alien-text version number `ᵘᵖ→⁰·⁵·¹`
+
+---
+
+### 🎵 State Sync
+
+| Trigger | Effect |
+|---------|--------|
+| session busy | Alien text bubble + 8-color highlight flash |
+| session thinking | Foot stomp + face shift + alien text |
+| session happy | Head sway celebration 3s |
+| session idle timeout | Auto-sleep + alien-text Zzz (`zᶻ...` → `zᶻᶻ...` → `zᶻᶻᶻ...`) |
+| Drag while sleeping | Startles awake to idle + arm flail panic |
+
+> All states default to yueer. Double-click to manually switch to baozi.
+
+---
+
+### 🚀 Startup Effects
+
+- Version number shown 2s after startup as alien-text `ᵛ⁰·⁵·¹` (3s duration)
+- Home page mascot appears at random horizontal position
+- Work page scatter-assemble animation on first message / `opencode -c`
+
+---
+
+## 📦 Installation
+
+Add to `~/.config/opencode/tui.json`:
 
 ```json
 {
@@ -125,51 +129,47 @@
 }
 ```
 
-重启 opencode 即可。插件会自动更新到最新版。
+Restart opencode. The plugin auto-updates to the latest version.
 
-## 🛠️ 技术栈
+## 🛠️ Tech Stack
 
 - **TypeScript** ESM
-- **@opentui/solid** — SolidJS 响应式 TUI 渲染
-- **@opencode-ai/plugin** — OpenCode 插件 API
-- 零运行时依赖（peer dep only）
-- TypeScript 类型检查通过
+- **@opentui/solid** — SolidJS reactive TUI rendering
+- **@opencode-ai/plugin** — OpenCode plugin API
+- Zero runtime dependencies (peer dep only)
+- TypeScript type-checked
 
-## 📂 项目结构
+## 📂 Project Structure
 
 ```
 opencode-mascot/
-├── tui.tsx                          # 插件入口，注册 slots + 启动逻辑
+├── tui.tsx                          # Plugin entry, registers slots + startup
 ├── src/
 │   ├── core/
-│   │   ├── types.ts                 # MascotPack / MascotState / Effect 类型
-│   │   ├── ascii-renderer.tsx       # 核心渲染引擎（574行，16+ 动画）
-│   │   ├── mascot-loader.ts         # 内置形象加载器
-│   │   ├── celebration-bus.ts       # 模块级事件总线（celebrate/version/scatter）
-│   │   ├── updater.ts               # npm 自动更新（pack + tar + 版本同步）
-│   │   └── logger.ts                # 文件日志（~/.cache/opencode/logs/mascot.log）
+│   │   ├── types.ts                 # MascotPack / MascotState / Effect types
+│   │   ├── ascii-renderer.tsx       # Core rendering engine (574 lines, 16+ animations)
+│   │   ├── mascot-loader.ts         # Built-in character loader
+│   │   ├── celebration-bus.ts       # Module-level event bus
+│   │   ├── updater.ts               # npm auto-update
+│   │   └── logger.ts                # File logger
 │   ├── components/
-│   │   ├── home-mascot.tsx          # 首页吉祥物（随机位置 + translate 拖拽）
-│   │   └── sidebar-mascot.tsx       # 工作页吉祥物（absolute 定位 + 躲猫猫）
+│   │   ├── home-mascot.tsx          # Home page mascot
+│   │   └── sidebar-mascot.tsx       # Work page mascot (peek-a-boo)
 │   └── builtins/
-│       ├── yueer/                   # 月儿形象（frames + effects）
-│       │   ├── frames.ts            # 5 帧 ASCII art
-│       │   └── index.ts             # 专属动画（呆毛/晃头/跺脚/变脸/气泡/扇手）
-│       └── baozi/                   # 包子形象（frames + effects）
-│           ├── frames.ts            # 5 帧 ASCII art
-│           └── index.ts             # 专属动画（蒸汽/气泡/惊恐）
+│       ├── yueer/                   # yueer (frames + effects)
+│       └── baozi/                   # baozi (frames + effects)
 ```
 
-## 🎨 自定义形象
+## 🎨 Custom Characters
 
-创建新的吉祥物只需定义一个 `MascotPack`：
+Define a `MascotPack`:
 
 ```typescript
 import type { MascotPack } from "@mingxy/opencode-mascot/types";
 
 const myMascot: MascotPack = {
   name: "@mingxy/mascot-custom",
-  displayName: "小猫",
+  displayName: "Kitty",
   version: "0.1.0",
   author: "you",
   description: "My custom mascot",
@@ -191,22 +191,22 @@ const myMascot: MascotPack = {
 };
 ```
 
-所有内置动画（眨眼/呼吸/走路/跳跃/睡眠/拖拽/变色/炸弹/摔坏/重组）**自动生效**。
+All built-in animations (blink/breath/walk/jump/sleep/drag/color-flash/bomb/fall-apart/reassemble) **work automatically**.
 
-## 📊 能力统计
+## 📊 Capabilities
 
-| 类别 | 数量 |
-|------|------|
-| 内置形象 | 2 |
-| 表情帧 | 5 / 形象 |
-| 自动动画 | 16 |
-| 交互操作 | 5 |
-| 躲猫猫行为 | 3 |
-| 随机意外 | 3 |
-| 火星文气泡 | 24（12/形象） |
-| 闪色颜色 | 8 |
-| 拖拽火星文 | 6 |
-| **总能力** | **33+** |
+| Category | Count |
+|----------|-------|
+| Built-in characters | 2 |
+| Expression frames | 5 / character |
+| Auto animations | 16 |
+| Interactions | 5 |
+| Peek-a-boo behaviors | 3 |
+| Random events | 3 |
+| Alien text phrases | 24 (12/character) |
+| Flash colors | 8 |
+| Drag alien text | 6 |
+| **Total** | **33+** |
 
 ## 📄 License
 
@@ -216,3 +216,4 @@ MIT © [mingxy](https://github.com/mengfanbo123)
 
 - [GitHub](https://github.com/mengfanbo123/opencode-mascot)
 - [npm](https://www.npmjs.com/package/@mingxy/opencode-mascot)
+- [中文文档](./README_zh-CN.md)
