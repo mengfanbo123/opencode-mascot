@@ -6,6 +6,14 @@ Customizable ASCII mascots that breathe, walk, sleep, get launched across the sc
 
 [English](./README.md) | [简体中文](./README_zh-CN.md)
 
+## 🏠 Home Page
+
+![home demo](./assets/demo-home.gif)
+
+## 💼 Work Page
+
+![work demo](./assets/demo-work.gif)
+
 ---
 
 ## ✨ Features

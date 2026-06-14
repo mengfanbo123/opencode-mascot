@@ -6,6 +6,14 @@
 
 [English](./README.md) | [简体中文](./README_zh-CN.md)
 
+## 🏠 首页
+
+![home demo](./assets/demo-home.gif)
+
+## 💼 工作页
+
+![work demo](./assets/demo-work.gif)
+
 ## ✨ 特色
 
 ### 🎭 内置形象（2个）
