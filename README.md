@@ -103,8 +103,24 @@ Each character includes **5 expression frames**: default / blink / happy / think
 | # | Event | Trigger | Effect |
 |---|-------|---------|--------|
 | 1 | **Fall apart** | Jump landing 40% / bounce 50% | Lines scatter → reassemble after 1.5s |
-| 2 | **Bomb drop** | 10% chance replacing walk (idle) | Fuse burns ✦/◌ + countdown ³·→²·→¹· → white flash explosion + `ᵇᵒᵒᵐ~` → reassemble |
+| 2 | **Bomb drop** | 10% chance replacing walk (idle) | Fuse burns ✦/◌ + countdown ³·→²·→¹· → red/orange/yellow flash explosion + `ᵇᵒᵒᵐ~💥` → reassemble |
 | 3 | **Scatter & assemble** | Startup / switch to work page | Lines start from random positions, 15-frame linear interpolation to home |
+
+---
+
+### 📦 Prop System (3 props)
+
+| Prop | Size | Trigger | Position | Description |
+|------|------|---------|----------|-------------|
+| **Monitor** | 16×5 | busy (65%) | side-right | Terminal showing `~$ᵒᵖᵉⁿᶜᵒᵈᵉ` + 20 random alien-text status frames (thinking/writing/git/bug/npm/compile/test/refactor/deploy/merge/lint/format/review/oops/hmm/help) |
+| **Pad** | 18×9 | busy (35%) + idle (40%) | front (character hidden) | Mini character plays games inside: Snake / Tetris / 2048, always game over after a few moves (rookie gamer), 15-frame loop |
+| **Box** | 14×8 | idle (5%, once/min) + home startup | side-left | Isometric 3D box with `ᵇᵒˣ` alien text. 4-frame loop: closed → shake → open (character crouches inside) → peek out |
+
+**Busy pacing:** Character paces anxiously (±3 steps, walk 3s / pause 2s) while monitor is shown. Monitor stays still.
+
+**Landing animation:** When a prop appears, character falls to the work area with easeInQuad curve (500ms).
+
+**Home startup ceremony:** Character hides → box drops from above (easeInQuad 500ms) → 2s later shake → 6s later box disappears + character drops to position.
 
 ---
 
@@ -221,13 +237,18 @@ All built-in animations (blink/breath/walk/jump/sleep/drag/color-flash/bomb/fall
 | Built-in characters | 3 |
 | Expression frames | 5 / character |
 | Auto animations | 22 |
+| Props (monitor/pad/box) | 3 |
+| Prop animation frames | 39 (20+15+4) |
 | Interactions | 5 |
 | Peek-a-boo behaviors | 3 |
 | Random events | 3 |
+| Busy behaviors (pacing/stomp/flash) | 3 |
+| Idle events (pad/box/sleep) | 3 |
+| Landing animations | 2 (busy/idle + home startup) |
 | Alien text phrases | 24 (12/character) |
 | Flash colors | 8 |
 | Drag alien text | 6 |
-| **Total** | **39+** |
+| **Total** | **50+** |
 
 ## 📄 License
 

@@ -2,6 +2,42 @@
 
 本项目版本号遵循 semver。每个版本列出主要变更。
 
+## [0.8.0] - 2025-06-16
+
+### Added
+- 道具系统：显示器（laptop）、Pad、立体箱子（box）三种道具
+- 显示器：16×5，20帧火星文随机切换（~$ᵒᵖᵉⁿᶜᵒᵈᵉ 提示符 + thinking/writing/git/bug/npm/compile/test/refactor/deploy/merge/lint/format/review/oops/hmm/help），busy 状态主力道具（65% 触发，side-right）
+- Pad：18×9，15帧游戏轮播（贪吃蛇/俄罗斯方块/2048），月儿在屏幕里打游戏又菜又爱玩（开局→走两步→game over→哭→不服→重开），busy 状态变体道具（35% 触发，front 覆盖，角色隐藏）
+- 立体箱子：14×8，4帧等轴测动画（关闭→抖动→打开→月儿蹲着露头→冒头），正面ᵇᵒˣ火星文，首页启动下落仪式（加速曲线+延迟2秒摇晃）
+- busy 踱步：小步焦急来回走（±3，走3秒停2秒），显示器不跟随移动
+- idle Pad：闲置30秒后40%概率触发，小人跳进 Pad 打游戏10-20秒
+- idle 回箱子：闲置1分钟后5%概率触发（每分钟最多1次），月儿藏进箱子3秒后跳出 bounce
+- 降落动画：busy/idle 触发道具时自动降落到工作区域（easeInQuad 500ms）
+- 爆炸效果升级：白色文字改为红/橙/黄循环闪烁（适配 light/dark 主题），ᵇᵒᵒᵐ~ 后加 💥
+
+### Changed
+- renderer/listener/state 单例化：模块级变量跨组件挂载保持，解决 busy 触发 sidebar 重挂载导致状态丢失
+- prop 独立 box 渲染：fragment 同级 + position="absolute"，解决拖拽卡顿、边框变形、z-index 分层
+- onCleanup 不清持续 timer：blink/breath/effect/propTimer/idleSleep/walk 跨挂载保持
+
+### Fixed
+- 首页 prop box 挤压 bottom 元素（加 position="absolute" 脱离文档流）
+- prop 出现时角色腿闪烁覆盖 Pad（hideForProp 自动隐藏 + 组件层 front 时不渲染角色 box）
+- busy 后双击切换的角色被重置回月儿（userOverride 保留）
+- 版本号显示不清（emitVersion 独立显示5秒，原混在庆祝气泡里）
+- 首页箱子下落打散重组（去掉启动 scatterIn）
+- 跳转工作页+cerebro 注入后 prop 动画静止（onCleanup 不清 propTimer）
+
+## [0.7.0] - 2025-06-15
+
+### Added
+- 道具系统架构：PropPack 类型 + prop-loader 加载器 + ascii-renderer 道具渲染层
+- 首版笔记本/Pad/箱子道具（后被 v0.8.0 重构替换）
+
+### Fixed
+- 版本号检测后头顶清晰显示5秒
+- busy 结束后双击切换角色保留
+
 ## [0.6.0] - 2025-06-15
 
 ### Added

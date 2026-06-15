@@ -91,6 +91,16 @@ codegraph sync
 | `src/` 或 `tui.tsx` 逻辑变更 | ✅ 发版 | 完整发版流程 |
 | 纯文档（README/CHANGELOG/CONTRIBUTING/CI/.gitignore） | ❌ 不发版 | 只 commit + push |
 
+## 文档更新流程
+
+发版后必须同步更新文档：
+
+1. **CHANGELOG.md** — 加新版本章节（Added/Changed/Fixed 分类）
+2. **README.md** — 更新对应章节（Features/Capabilities 统计数字）
+3. `git add -A && git commit -m "docs: 更新README和CHANGELOG至 vX.X.X" && git push`
+
+文档改动不发版（只 commit + push）。
+
 ## 发版流程（严格遵守顺序）
 
 ```
