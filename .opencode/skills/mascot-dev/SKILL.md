@@ -55,6 +55,33 @@ codegraph sync
 
 **没有 build 命令**——源码直接发布到 npm。
 
+## 本地调试（新版本迭代时）
+
+开发调试期间用本地文件引用，改完代码重启 opencode 立即生效，省去 npm publish + commit + push 流程。
+
+### 配置 tui.json
+
+编辑 `~/.config/opencode/tui.json`，把 plugin 从线上改成本地路径：
+
+```json
+{
+  "plugin": ["@slkiser/opencode-quota@latest", "/mnt/d/dev/github/project/opencode-mascot"]
+}
+```
+
+本地路径直接写绝对路径（不带 `file:` 前缀）。
+
+### 调试流程
+
+1. 改代码 → `npm run typecheck` 验证
+2. 重启 opencode → 本地代码立即生效
+3. 测试满意后按发版流程发版
+4. **发版后恢复 tui.json 回线上引用**：`@mingxy/opencode-mascot@latest`
+
+### 查看日志
+
+调试日志在 `~/.cache/opencode/logs/mascot.log`，用 `log("DEBUG", "...")` 输出。
+
 ## 发版规则
 
 **只有 `src/` 或 `tui.tsx` 代码逻辑变更才发版。**
