@@ -159,16 +159,8 @@ export function SidebarMascot(props: SidebarMascotProps): JSX.Element {
     if (statusType === "busy" || statusType === "retry") {
       if (hideSide) returnToView();
       renderers[currentName()].setState("busy");
-      // 先显示箱子"打开"动画300ms，再切换到 busy 道具（道具从箱子里掉出来）
       const busyProp = pickPropByTrigger("busy");
-      if (busyProp) {
-        renderers[currentName()].setProp(getProp("box") ?? null);
-        setTimeout(() => {
-          renderers[currentName()].setProp(busyProp);
-        }, 300);
-      } else {
-        renderers[currentName()].setProp(null);
-      }
+      renderers[currentName()].setProp(busyProp);
     } else {
       setStateWithSwitch("idle");
       renderers[currentName()].setProp(null);
@@ -279,7 +271,19 @@ export function SidebarMascot(props: SidebarMascotProps): JSX.Element {
         checkEdge();
       }}
     >
-      {renderers[currentName()]?.element() ?? null}
+      {renderers[currentName()]?.propElement() ? (
+        <box
+          position="absolute"
+          zIndex={50}
+          left={renderers[currentName()].getPropPosition() === "side-left" ? -16 : renderers[currentName()].getPropPosition() === "side-right" ? 12 : 0}
+          top={0}
+        >
+          {renderers[currentName()].propElement()}
+        </box>
+      ) : null}
+      <box zIndex={100}>
+        {renderers[currentName()]?.element() ?? null}
+      </box>
     </box>
   );
 }

@@ -157,7 +157,19 @@ export function HomeMascot(props: HomeMascotProps): JSX.Element {
       onMouseUp={() => { stopDrag(); }}
       onMouseDragEnd={() => { stopDrag(); }}
     >
-      {renderers[currentName()]?.element() ?? null}
+      {renderers[currentName()]?.propElement() ? (
+        <box
+          position="absolute"
+          zIndex={50}
+          left={renderers[currentName()].getPropPosition() === "side-left" ? -16 : renderers[currentName()].getPropPosition() === "side-right" ? 12 : 0}
+          top={0}
+        >
+          {renderers[currentName()].propElement()}
+        </box>
+      ) : null}
+      <box zIndex={100}>
+        {renderers[currentName()]?.element() ?? null}
+      </box>
     </box>
   );
 }

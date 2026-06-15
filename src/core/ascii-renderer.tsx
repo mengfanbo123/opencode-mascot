@@ -46,6 +46,8 @@ function getFrameLines(pack: MascotPack, frameName: string): string[] {
 
 export function createAnimatedRenderer(pack: MascotPack): {
   element: () => JSX.Element;
+  propElement: () => JSX.Element | null;
+  getPropPosition: () => PropPosition | null;
   getState: () => MascotState;
   setState: (s: MascotState) => void;
   toggleWalk: () => void;
@@ -331,9 +333,6 @@ export function createAnimatedRenderer(pack: MascotPack): {
     scatter();
     bomb();
     versionMsg();
-    activeProp();
-    propFrameIdx();
-    propPosition();
 
     for (const [, [get]] of extraSignals) {
       get();
@@ -368,47 +367,6 @@ export function createAnimatedRenderer(pack: MascotPack): {
       lines = effects.render(lines, renderCtx);
     }
 
-    // ─── Prop overlay ───
-    const prop = activeProp();
-    if (prop) {
-      const propFramesRaw = Array.isArray(prop.frames[0])
-        ? (prop.frames as string[][])
-        : [prop.frames as string[]];
-      const propLines = propFramesRaw[propFrameIdx() % propFramesRaw.length] ?? propFramesRaw[0];
-
-      if (propLines.length > 0) {
-        const pos = propPosition();
-        if (pos === 'front') {
-          const overlayCount = Math.min(propLines.length, lines.length);
-          const startRow = Math.floor((lines.length - overlayCount) / 2);
-          for (let i = 0; i < overlayCount; i++) {
-            lines[startRow + i] = propLines[i];
-          }
-        } else {
-          const charWidth = lines[0]?.length ?? 0;
-          const propWidth = propLines[0]?.length ?? 0;
-          const charHeight = lines.length;
-          const propHeight = propLines.length;
-          const maxLines = Math.max(charHeight, propHeight);
-          const charPad = Math.floor((maxLines - charHeight) / 2);
-          const propPad = Math.floor((maxLines - propHeight) / 2);
-          const sep = "  ";
-
-          const merged: string[] = [];
-          for (let i = 0; i < maxLines; i++) {
-            const cLine = (i >= charPad && i < charPad + charHeight)
-              ? lines[i - charPad]
-              : " ".repeat(charWidth);
-            const pLine = (i >= propPad && i < propPad + propHeight)
-              ? propLines[i - propPad]
-              : " ".repeat(propWidth);
-            merged.push(pos === 'side-right' ? cLine + sep + pLine : pLine + sep + cLine);
-          }
-          lines = merged;
-        }
-      }
-    }
-
     const top = jumpOffset();
     const left = offset > 0 ? offset : 0;
     const cel = celebrate();
@@ -430,6 +388,26 @@ export function createAnimatedRenderer(pack: MascotPack): {
         ) : null}
         {lines.map((line: string, i: number) => (
           <text fg={flashColor() ?? fg} left={sc?.[i]?.dx ?? 0} top={sc?.[i]?.dy ?? 0}>{line}</text>
+        ))}
+      </box>
+    );
+  };
+
+  const propElement = () => {
+    activeProp();
+    propFrameIdx();
+    const prop = activeProp();
+    if (!prop) return null;
+
+    const propFramesRaw = Array.isArray(prop.frames[0])
+      ? (prop.frames as string[][])
+      : [prop.frames as string[]];
+    const propLines = propFramesRaw[propFrameIdx() % propFramesRaw.length] ?? propFramesRaw[0];
+
+    return (
+      <box flexDirection="column" alignItems="flex-start">
+        {propLines.map((line: string) => (
+          <text fg={fg}>{line}</text>
         ))}
       </box>
     );
@@ -658,5 +636,5 @@ export function createAnimatedRenderer(pack: MascotPack): {
 
   const getProp = () => activeProp();
 
-  return { element, getState: currentState, setState, toggleWalk, setDragging, setCharacterHidden, celebrateUpdate, bounce, showVersion, scatterIn, explode, setProp, getProp };
+  return { element, propElement, getPropPosition: () => propPosition(), getState: currentState, setState, toggleWalk, setDragging, setCharacterHidden, celebrateUpdate, bounce, showVersion, scatterIn, explode, setProp, getProp };
 }
