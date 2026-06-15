@@ -5,6 +5,7 @@ import type { JSX } from "@opentui/solid";
 import type { MascotPack } from "../core/types";
 import { createAnimatedRenderer } from "../core/ascii-renderer";
 import { onCelebrate, onVersion, onScatter } from "../core/celebration-bus";
+import { getProp } from "../core/prop-loader";
 
 interface HomeMascotProps {
   mascots: Record<string, MascotPack>;
@@ -69,6 +70,12 @@ export function HomeMascot(props: HomeMascotProps): JSX.Element {
   onScatter(() => {
     renderers[currentName()].scatterIn();
   });
+
+  setTimeout(() => {
+    if (!renderers[currentName()].getProp()) {
+      renderers[currentName()].setProp(getProp("box") ?? null);
+    }
+  }, 2500);
 
   const stopDrag = () => {
     isDragging = false;
