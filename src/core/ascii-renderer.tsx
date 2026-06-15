@@ -3,6 +3,8 @@
 import { createSignal, onCleanup } from "solid-js";
 import type { JSX } from "@opentui/solid";
 import type { MascotPack, MascotState, EffectTimerCtx, EffectRenderCtx, PropPack, PropPosition } from "./types";
+import { emitPropShow } from "./celebration-bus";
+import { log } from "./logger";
 
 const SUPERSCRIPT: Record<string, string> = {
   "0": "⁰", "1": "¹", "2": "²", "3": "³", "4": "⁴",
@@ -141,10 +143,17 @@ export function createAnimatedRenderer(pack: MascotPack): {
   };
 
   let idleSleepTimeout: ReturnType<typeof setTimeout> | null = null;
+  let idlePadTimeout: ReturnType<typeof setTimeout> | null = null;
+  let idleBoxTimeout: ReturnType<typeof setTimeout> | null = null;
+  let lastBoxEvent = 0;
 
   const resetIdleSleep = () => {
     if (idleSleepTimeout) clearTimeout(idleSleepTimeout);
+    if (idlePadTimeout) clearTimeout(idlePadTimeout);
+    if (idleBoxTimeout) clearTimeout(idleBoxTimeout);
     idleSleepTimeout = null;
+    idlePadTimeout = null;
+    idleBoxTimeout = null;
     if (currentState() !== "idle") return;
     idleSleepTimeout = setTimeout(() => {
       if (currentState() === "idle") {
@@ -152,6 +161,49 @@ export function createAnimatedRenderer(pack: MascotPack): {
         stopWalk();
       }
     }, anim.idleTimeout);
+
+    idlePadTimeout = setTimeout(async () => {
+      const { log } = await import("./logger");
+      log("DEBUG", `idlePadTimeout fired, state=${currentState()}, prop=${activeProp()?.name ?? "null"}`);
+      if (currentState() !== "idle") return;
+      if (activeProp()) return;
+      if (Math.random() >= 0.4) {
+        log("DEBUG", "idle Pad skipped (70% miss)");
+        return;
+      }
+      const { getProp } = await import("./prop-loader");
+      const pad = getProp("pad");
+      if (!pad) return;
+      log("DEBUG", "idle Pad triggered!");
+      setProp(pad);
+      setCharacterHiddenSignal(true);
+      emitPropShow();
+      const duration = 10000 + Math.random() * 10000;
+      idlePadTimeout = setTimeout(() => {
+        setProp(null);
+        setCharacterHiddenSignal(false);
+      }, duration);
+    }, 30000);
+
+    idleBoxTimeout = setTimeout(async () => {
+      if (currentState() !== "idle") return;
+      if (activeProp()) return;
+      const now = Date.now();
+      if (now - lastBoxEvent < 60000) return;
+      if (Math.random() >= 0.05) return;
+      lastBoxEvent = now;
+      const { getProp } = await import("./prop-loader");
+      const box = getProp("box");
+      if (!box) return;
+      setProp(box);
+      setCharacterHiddenSignal(true);
+      emitPropShow();
+      idleBoxTimeout = setTimeout(() => {
+        setProp(null);
+        setCharacterHiddenSignal(false);
+        bounce();
+      }, 3000);
+    }, 60000);
   };
 
   resetIdleSleep();
@@ -181,7 +233,7 @@ export function createAnimatedRenderer(pack: MascotPack): {
   // 1. Blink
   const hasBlink = (pack.frames as Record<string, string[] | undefined>)["blink"] !== undefined;
 
-  const blinkTimer = setInterval(() => {
+  setInterval(() => {
     if (currentState() !== "sleeping" && Math.random() < anim.blinkChance && hasBlink) {
       setFrameOverride("blink");
       setTimeout(() => setFrameOverride(null), 150);
@@ -193,7 +245,7 @@ export function createAnimatedRenderer(pack: MascotPack): {
     (k) => k !== "default" && k !== "blink",
   );
 
-  const expressionTimer = setInterval(() => {
+  setInterval(() => {
     if (currentState() === "idle" && !frameOverride()) {
       const pick = availableExpressions[Math.floor(Math.random() * availableExpressions.length)];
       if (pick) {
@@ -204,7 +256,7 @@ export function createAnimatedRenderer(pack: MascotPack): {
   }, anim.expressionInterval);
 
   // 3. Breathing
-  const breathTimer = setInterval(() => {
+  setInterval(() => {
     if (currentState() === "idle") {
       setBreathPhase((v) => !v);
     }
@@ -243,30 +295,28 @@ export function createAnimatedRenderer(pack: MascotPack): {
     setWalkOffset(0);
   };
 
-  let walkTimeout: ReturnType<typeof setTimeout>;
-
   function scheduleNextWalk() {
     if (!walkEnabled()) return setTimeout(() => {}, 60000);
     const delay = anim.walkMinDelay + Math.floor(Math.random() * (anim.walkMaxDelay - anim.walkMinDelay));
     return setTimeout(() => {
       if (currentState() === "idle" && !frameOverride() && walkStep === -1 && walkEnabled()) {
-        if (Math.random() < 0.1) {
+        const boom = Math.random() < 0.1;
+        log("DEBUG", `walk callback: boom=${boom}`);
+        if (boom) {
           explode();
         } else {
           startWalk();
         }
       }
       if (currentState() !== "sleeping") {
-        walkTimeout = scheduleNextWalk();
+        scheduleNextWalk();
       }
     }, delay);
   }
 
-  walkTimeout = scheduleNextWalk();
+  scheduleNextWalk();
 
   // 5. Jump
-  let jumpTimeout: ReturnType<typeof setTimeout>;
-
   function scheduleNextJump() {
     const delay = anim.jumpMinDelay + Math.floor(Math.random() * (anim.jumpMaxDelay - anim.jumpMinDelay));
     return setTimeout(() => {
@@ -281,12 +331,12 @@ export function createAnimatedRenderer(pack: MascotPack): {
         }, 2000);
       }
       if (currentState() !== "sleeping") {
-        jumpTimeout = scheduleNextJump();
+        scheduleNextJump();
       }
     }, delay);
   }
 
-  jumpTimeout = scheduleNextJump();
+  scheduleNextJump();
 
   // ─── Pack-defined effect timers ───
   const effectTimers: ReturnType<typeof setInterval>[] = [];
@@ -296,16 +346,10 @@ export function createAnimatedRenderer(pack: MascotPack): {
     }
   }
 
+  resetIdleSleep();
+
   // ─── Cleanup ───
   onCleanup(() => {
-    clearInterval(blinkTimer);
-    clearInterval(expressionTimer);
-    clearInterval(breathTimer);
-    clearTimeout(walkTimeout);
-    clearTimeout(jumpTimeout);
-    if (idleSleepTimeout) clearTimeout(idleSleepTimeout);
-    if (walkInterval) clearInterval(walkInterval);
-    for (const t of effectTimers) clearInterval(t);
     stopFlash();
     stopDragMsg();
     stopBounce();
@@ -315,7 +359,6 @@ export function createAnimatedRenderer(pack: MascotPack): {
     stopFall();
     stopBomb();
     if (zzzTimer) { clearInterval(zzzTimer); zzzTimer = null; }
-    stopPropTimer();
   });
 
   // ─── Render ───
@@ -333,6 +376,9 @@ export function createAnimatedRenderer(pack: MascotPack): {
     scatter();
     bomb();
     versionMsg();
+    characterHidden();
+    activeProp();
+    propPosition();
 
     for (const [, [get]] of extraSignals) {
       get();
@@ -345,7 +391,8 @@ export function createAnimatedRenderer(pack: MascotPack): {
     const width = rawLines[0]?.length ?? 10;
     const blank = " ".repeat(width);
 
-    let lines: string[] = characterHidden()
+    const hideForProp = propPosition() === "front";
+    let lines: string[] = (characterHidden() || hideForProp)
       ? rawLines.map(() => blank)
       : rawLines.map((line, i) => {
       if (!breathPhase()) {
@@ -422,8 +469,8 @@ export function createAnimatedRenderer(pack: MascotPack): {
     if (s !== "idle") {
       stopWalk();
     } else if (walkEnabled()) {
-      walkTimeout = scheduleNextWalk();
-      jumpTimeout = scheduleNextJump();
+      scheduleNextWalk();
+      scheduleNextJump();
     }
 
     if (s === "thinking" || s === "busy") {
@@ -455,7 +502,7 @@ export function createAnimatedRenderer(pack: MascotPack): {
     if (!next) {
       stopWalk();
     } else if (currentState() === "idle") {
-      walkTimeout = scheduleNextWalk();
+      scheduleNextWalk();
     }
   };
 
@@ -596,15 +643,22 @@ export function createAnimatedRenderer(pack: MascotPack): {
           clearInterval(fuseTimer);
           setBomb(null);
           setFrameOverride(null);
-          setFlashColor("#FFFFFF");
+          const explosionColors = ["#FF0000", "#FF6600", "#FFCC00"];
+          let expColorIdx = 0;
+          setFlashColor(explosionColors[0]);
+          const expColorTimer = setInterval(() => {
+            expColorIdx++;
+            setFlashColor(explosionColors[expColorIdx % explosionColors.length]);
+          }, 100);
           const lineCount = getFrameLines(pack, "default").length;
           const offsets = Array.from({ length: lineCount }, () => ({
             dx: Math.floor((Math.random() - 0.5) * 30),
             dy: Math.floor((Math.random() - 0.5) * 15),
           }));
           setScatter(offsets);
-          setCelebrate({ text: "ᵇᵒᵒᵐ~", count: 0 });
+          setCelebrate({ text: "ᵇᵒᵒᵐ~💥", count: 0 });
           explodeTimer = setTimeout(() => {
+            clearInterval(expColorTimer);
             setFlashColor(null);
             setCelebrate(null);
             scatterIn();
@@ -624,8 +678,14 @@ export function createAnimatedRenderer(pack: MascotPack): {
       setPropPosition(pos);
       stopPropTimer();
       if (Array.isArray(prop.frames[0]) && prop.frameInterval) {
+        const totalFrames = (prop.frames as string[][]).length;
+        const randomize = prop.name === "laptop";
         propTimer = setInterval(() => {
-          setPropFrameIdx((idx) => (idx + 1) % (prop.frames as string[][]).length);
+          if (randomize) {
+            setPropFrameIdx(Math.floor(Math.random() * totalFrames));
+          } else {
+            setPropFrameIdx((idx) => (idx + 1) % totalFrames);
+          }
         }, prop.frameInterval);
       }
     } else {

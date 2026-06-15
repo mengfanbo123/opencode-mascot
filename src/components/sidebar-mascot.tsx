@@ -4,7 +4,7 @@ import { createSignal, onCleanup } from "solid-js";
 import type { JSX } from "@opentui/solid";
 import type { MascotPack, MascotState } from "../core/types";
 import { createAnimatedRenderer } from "../core/ascii-renderer";
-import { onCelebrate, onVersion, onScatter } from "../core/celebration-bus";
+import { onCelebrate, onVersion, onScatter, onPropShow } from "../core/celebration-bus";
 import { pickPropByTrigger } from "../core/prop-loader";
 import { log } from "../core/logger";
 
@@ -34,7 +34,80 @@ const PEEK = 2;
 const PEEK_INTERVAL = 1200;
 const EDGE_THRESHOLD = 3;
 
+let singletonRenderers: Record<string, ReturnType<typeof createAnimatedRenderer>> | null = null;
+let singletonListener = false;
+const [globalCurrentName, setGlobalCurrentName] = createSignal<string>("yueer");
+const [globalUserOverride, setGlobalUserOverride] = createSignal(false);
+const [globalPosX, setGlobalPosX] = createSignal(20);
+const [globalPosY, setGlobalPosY] = createSignal(2);
+const [globalPacingX, setGlobalPacingX] = createSignal(0);
+const [globalZBoost, setGlobalZBoost] = createSignal(false);
+let globalScattered = false;
+let globalLastUserY: number | null = null;
+let globalLastUserX: number | null = null;
+let globalFallTimer: ReturnType<typeof setInterval> | null = null;
+
+const fallToWorkY = () => {
+  const targetY = globalLastUserY ?? 25;
+  const targetX = globalLastUserX ?? 5;
+  const startY = globalPosY();
+  const startX = globalPosX();
+  const needMove = Math.abs(startY - targetY) >= 2 || Math.abs(startX - targetX) >= 2;
+  if (!needMove) return;
+  const startTime = Date.now();
+  const duration = 500;
+  if (globalFallTimer) clearInterval(globalFallTimer);
+  globalFallTimer = setInterval(() => {
+    const elapsed = Date.now() - startTime;
+    const t = Math.min(elapsed / duration, 1);
+    const eased = t * t;
+    setGlobalPosY(Math.round(startY + (targetY - startY) * eased));
+    setGlobalPosX(Math.round(startX + (targetX - startX) * eased));
+    if (t >= 1) {
+      if (globalFallTimer) { clearInterval(globalFallTimer); globalFallTimer = null; }
+    }
+  }, 16);
+};
+
+let busyPacingTimer: ReturnType<typeof setInterval> | null = null;
+
+const startBusyPacing = () => {
+  if (busyPacingTimer) clearInterval(busyPacingTimer);
+  let step = 0;
+  let direction = 1;
+  let phaseTimer = 0;
+  let walking = true;
+  busyPacingTimer = setInterval(() => {
+    const prop = singletonRenderers?.[globalCurrentName()]?.getProp();
+    if (prop && prop.position === "front") return;
+    phaseTimer += 100;
+    if (walking) {
+      if (phaseTimer >= 3000) {
+        walking = false;
+        phaseTimer = 0;
+        setGlobalPacingX(0);
+        return;
+      }
+      step += direction;
+      if (Math.abs(step) >= 3) direction *= -1;
+      setGlobalPacingX(step);
+    } else {
+      if (phaseTimer >= 2000) {
+        walking = true;
+        phaseTimer = 0;
+        step = 0;
+        direction = Math.random() < 0.5 ? -1 : 1;
+      }
+    }
+  }, 100);
+};
+
+const stopBusyPacing = () => {
+  if (busyPacingTimer) { clearInterval(busyPacingTimer); busyPacingTimer = null; }
+};
+
 export function SidebarMascot(props: SidebarMascotProps): JSX.Element {
+  log("DEBUG", "SidebarMascot mount");
   const names = Object.keys(props.mascots);
   const initialName =
     props.initialMascot && props.mascots[props.initialMascot]
@@ -43,12 +116,24 @@ export function SidebarMascot(props: SidebarMascotProps): JSX.Element {
       ? "yueer"
       : names[0];
 
-  const [currentName, setCurrentName] = createSignal(initialName);
-  const [userOverride, setUserOverride] = createSignal(false);
-  const [posX, setPosX] = createSignal(20);
-  const [posY, setPosY] = createSignal(2);
+  if (!singletonRenderers) {
+    singletonRenderers = {};
+    for (const [name, pack] of Object.entries(props.mascots)) {
+      singletonRenderers[name] = createAnimatedRenderer(pack);
+    }
+    setGlobalCurrentName(initialName);
+  }
+  const renderers = singletonRenderers;
+
+  const currentName = globalCurrentName;
+  const setCurrentName = setGlobalCurrentName;
+  const setUserOverride = setGlobalUserOverride;
+  const posX = globalPosX;
+  const setPosX = setGlobalPosX;
+  const posY = globalPosY;
+  const setPosY = setGlobalPosY;
+
   const [containerWidth, setContainerWidth] = createSignal(0);
-  const [zBoost, setZBoost] = createSignal(false);
   let dragStartX = 0;
   let dragStartY = 0;
   let dragAnchorX = 0;
@@ -58,11 +143,6 @@ export function SidebarMascot(props: SidebarMascotProps): JSX.Element {
   let hideSide: "left" | "right" | null = null;
   let peekTimer: ReturnType<typeof setInterval> | null = null;
   let returnTimer: ReturnType<typeof setInterval> | null = null;
-
-  const renderers: Record<string, ReturnType<typeof createAnimatedRenderer>> = {};
-  for (const [name, pack] of Object.entries(props.mascots)) {
-    renderers[name] = createAnimatedRenderer(pack);
-  }
 
   const stopPeek = () => {
     if (peekTimer) { clearInterval(peekTimer); peekTimer = null; }
@@ -143,87 +223,129 @@ export function SidebarMascot(props: SidebarMascotProps): JSX.Element {
     }, 16);
   };
 
-  const setStateWithSwitch = (s: MascotState) => {
-    const cur = currentName();
-    renderers[cur].setState(s);
-    if (userOverride()) return;
-    const target = DEFAULT_STATE_MAP[s];
-    if (target && target !== cur && props.mascots[target]) {
-      setCurrentName(target);
-      renderers[target].setState(s);
-    }
-  };
+  if (!singletonListener) {
+    singletonListener = true;
 
-  props.api.event.on("session.status", (data: unknown) => {
-    const payload = data as { type?: string; properties?: { sessionID?: string; status?: { type?: string } } } | null;
-    const statusType = payload?.properties?.status?.type;
-    log("DEBUG", `session.status: statusType=${statusType}, full=${JSON.stringify(payload)?.slice(0, 200)}`);
-    if (statusType === "busy" || statusType === "retry") {
-      if (hideSide) returnToView();
-      renderers[currentName()].setState("busy");
-      const busyProp = pickPropByTrigger("busy");
-      renderers[currentName()].setProp(busyProp);
-      renderers[currentName()].setCharacterHidden(busyProp?.position === "front");
-    } else {
-      setStateWithSwitch("idle");
-      renderers[currentName()].setProp(null);
-      renderers[currentName()].setCharacterHidden(false);
-    }
-  });
-
-  props.api.event.on("session.idle", () => {
-    setStateWithSwitch("happy");
-    setTimeout(() => setStateWithSwitch("idle"), 3000);
-  });
-
-  props.api.event.on("mascot.switch", (data: unknown) => {
-    const target = data as { name?: string } | null;
-    if (target?.name) {
-      const name = target.name;
-      if (props.mascots[name] && name !== currentName()) {
-        setCurrentName(name);
-        setUserOverride(true);
+    props.api.event.on("session.status", (data: unknown) => {
+      const payload = data as { type?: string; properties?: { sessionID?: string; status?: { type?: string } } } | null;
+      const statusType = payload?.properties?.status?.type;
+      log("DEBUG", `session.status: statusType=${statusType}`);
+      if (statusType === "busy" || statusType === "retry") {
+        renderers[globalCurrentName()].setState("busy");
+        if (!renderers[globalCurrentName()].getProp()) {
+          const busyProp = pickPropByTrigger("busy");
+          renderers[globalCurrentName()].setProp(busyProp);
+          renderers[globalCurrentName()].setCharacterHidden(busyProp?.position === "front");
+          fallToWorkY();
+        }
+        startBusyPacing();
+      } else {
+        renderers[globalCurrentName()].setState("idle");
+        stopBusyPacing();
+        if (!globalUserOverride()) {
+          const target = DEFAULT_STATE_MAP["idle" as MascotState];
+          if (target && target !== globalCurrentName() && singletonRenderers && singletonRenderers[target]) {
+            setGlobalCurrentName(target);
+            singletonRenderers[target].setState("idle");
+          }
+        }
+        renderers[globalCurrentName()].setProp(null);
+        renderers[globalCurrentName()].setCharacterHidden(false);
       }
-    } else {
-      switchToNext();
-    }
-  });
+    });
 
-  props.api.event.on("mascot.toggleWalk", () => {
-    renderers[currentName()].toggleWalk();
-  });
+    props.api.event.on("session.idle", () => {
+      renderers[globalCurrentName()].setState("happy");
+      setTimeout(() => {
+        renderers[globalCurrentName()].setState("idle");
+      }, 3000);
+    });
 
-  onCelebrate((newVersion) => {
-    setZBoost(true);
-    renderers[currentName()].celebrateUpdate(newVersion);
-    setTimeout(() => setZBoost(false), 2000);
-  });
+    props.api.event.on("mascot.switch", (data: unknown) => {
+      const target = data as { name?: string } | null;
+      if (target?.name) {
+        const name = target.name;
+        if (singletonRenderers && singletonRenderers[name] && name !== globalCurrentName()) {
+          setGlobalCurrentName(name);
+          setGlobalUserOverride(true);
+        }
+      } else {
+        const cur = globalCurrentName();
+        const allNames = Object.keys(singletonRenderers ?? {});
+        const idx = allNames.indexOf(cur);
+        setGlobalCurrentName(allNames[(idx + 1) % allNames.length]);
+        setGlobalUserOverride(true);
+      }
+    });
 
-  onVersion((version) => {
-    setZBoost(true);
-    renderers[currentName()].showVersion(version);
-    setTimeout(() => setZBoost(false), 3500);
-  });
+    props.api.event.on("mascot.toggleWalk", () => {
+      renderers[globalCurrentName()].toggleWalk();
+    });
 
-  let scattered = false;
+    onCelebrate((newVersion) => {
+      setGlobalZBoost(true);
+      renderers[globalCurrentName()].celebrateUpdate(newVersion);
+      setTimeout(() => setGlobalZBoost(false), 2000);
+    });
 
-  onScatter(() => {
-    if (scattered) return;
-    scattered = true;
-    renderers[currentName()].scatterIn();
-  });
+    onVersion((version) => {
+      setGlobalZBoost(true);
+      renderers[globalCurrentName()].showVersion(version);
+      setTimeout(() => setGlobalZBoost(false), 3500);
+    });
 
-  setTimeout(() => {
-    if (scattered) return;
-    scattered = true;
-    renderers[currentName()].scatterIn();
-  }, 2000);
+    onScatter(() => {
+      if (globalScattered) return;
+      globalScattered = true;
+      renderers[globalCurrentName()].scatterIn();
+    });
+
+    onPropShow(() => {
+      fallToWorkY();
+    });
+
+    globalScattered = true;
+    renderers[globalCurrentName()].scatterIn();
+  }
 
   const propOffset = () => {
     const pos = renderers[currentName()]?.getPropPosition();
     if (pos === "side-left") return -18;
     if (pos === "side-right") return 12;
     return 0;
+  };
+
+  const handleMouseDown = (e: any) => {
+    if (hideSide) { returnToView(); return; }
+    const now = Date.now();
+    if (now - lastClickTime < 300) {
+      switchToNext();
+      lastClickTime = 0;
+      return;
+    }
+    lastClickTime = now;
+    if (e.modifiers?.alt) {
+      dragStartX = e.x;
+      dragStartY = e.y;
+      dragAnchorX = posX();
+      dragAnchorY = posY();
+      isDragging = true;
+      renderers[currentName()].setDragging(true);
+      props.api.renderer.clearSelection();
+    }
+  };
+  const handleMouseDrag = (e: any) => {
+    if (e.modifiers?.alt && isDragging) {
+      setPosX(clampX(dragAnchorX + (e.x - dragStartX)));
+      setPosY(clampY(dragAnchorY + (e.y - dragStartY)));
+      globalLastUserY = posY();
+      globalLastUserX = posX();
+    }
+  };
+  const handleMouseUp = () => {
+    isDragging = false;
+    renderers[currentName()].setDragging(false);
+    checkEdge();
   };
 
   return (
@@ -233,17 +355,22 @@ export function SidebarMascot(props: SidebarMascotProps): JSX.Element {
           position="absolute"
           left={posX() + propOffset()}
           top={posY()}
-          zIndex={zBoost() ? 9998 : 50}
+          zIndex={globalZBoost() ? 9998 : 50}
+          onMouseDown={handleMouseDown}
+          onMouseDrag={handleMouseDrag}
+          onMouseUp={handleMouseUp}
+          onMouseDragEnd={handleMouseUp}
         >
           {renderers[currentName()].propElement()}
         </box>
       ) : null}
-      <box
-        position="absolute"
-        left={posX()}
-        top={posY()}
-        alignItems="center"
-        zIndex={zBoost() ? 9999 : 100}
+      {renderers[currentName()].getPropPosition() !== "front" ? (
+        <box
+          position="absolute"
+          left={posX() + globalPacingX()}
+          top={posY()}
+          alignItems="center"
+        zIndex={globalZBoost() ? 9999 : 100}
         flexDirection="column"
         ref={(node: any) => {
           if (node) {
@@ -255,46 +382,14 @@ export function SidebarMascot(props: SidebarMascotProps): JSX.Element {
             }
           }
         }}
-        onMouseDown={(e: any) => {
-          if (hideSide) { returnToView(); return; }
-
-          const now = Date.now();
-          if (now - lastClickTime < 300) {
-            switchToNext();
-            lastClickTime = 0;
-            return;
-          }
-          lastClickTime = now;
-
-          if (e.modifiers?.alt) {
-            dragStartX = e.x;
-            dragStartY = e.y;
-            dragAnchorX = posX();
-            dragAnchorY = posY();
-            isDragging = true;
-            renderers[currentName()].setDragging(true);
-            props.api.renderer.clearSelection();
-          }
-        }}
-        onMouseDrag={(e: any) => {
-          if (e.modifiers?.alt && isDragging) {
-            setPosX(clampX(dragAnchorX + (e.x - dragStartX)));
-            setPosY(clampY(dragAnchorY + (e.y - dragStartY)));
-          }
-        }}
-        onMouseUp={() => {
-          isDragging = false;
-          renderers[currentName()].setDragging(false);
-          checkEdge();
-        }}
-        onMouseDragEnd={() => {
-          isDragging = false;
-          renderers[currentName()].setDragging(false);
-          checkEdge();
-        }}
+        onMouseDown={handleMouseDown}
+        onMouseDrag={handleMouseDrag}
+        onMouseUp={handleMouseUp}
+        onMouseDragEnd={handleMouseUp}
       >
         {renderers[currentName()]?.element() ?? null}
       </box>
+      ) : null}
     </>
   );
 }

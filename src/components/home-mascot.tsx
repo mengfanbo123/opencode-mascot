@@ -16,20 +16,26 @@ interface HomeMascotProps {
   };
 }
 
+let homeSingletonRenderers: Record<string, ReturnType<typeof createAnimatedRenderer>> | null = null;
+let homeStartupTriggered = false;
+const [homeCurX, setHomeCurX] = createSignal(0);
+const [homeCurY, setHomeCurY] = createSignal(7);
+
 export function HomeMascot(props: HomeMascotProps): JSX.Element {
   const names = Object.keys(props.mascots);
   const initialName = props.mascots["yueer"] ? "yueer" : names[0];
 
   const cw = (typeof process !== "undefined" && process.stdout?.columns) || 80;
 
-  const initX = Math.floor((Math.random() - 0.5) * Math.max(0, cw - 20));
-  const initY = 0;
-
   const [currentName, setCurrentName] = createSignal(initialName);
   const [zBoost, setZBoost] = createSignal(false);
-  let boxRef: any = null;
-  let curX = initX;
-  let curY = initY;
+  const curX = homeCurX;
+  const setCurX = setHomeCurX;
+  const curY = homeCurY;
+  const setCurY = setHomeCurY;
+  if (!homeStartupTriggered) {
+    setCurX(Math.floor(cw / 2) - 5);
+  }
   let dragStartX = 0;
   let dragStartY = 0;
   let dragAnchorX = 0;
@@ -37,22 +43,18 @@ export function HomeMascot(props: HomeMascotProps): JSX.Element {
   let lastClickTime = 0;
   let isDragging = false;
 
-  const renderers: Record<string, ReturnType<typeof createAnimatedRenderer>> = {};
-  for (const [name, pack] of Object.entries(props.mascots)) {
-    renderers[name] = createAnimatedRenderer(pack);
+  if (!homeSingletonRenderers) {
+    homeSingletonRenderers = {};
+    for (const [name, pack] of Object.entries(props.mascots)) {
+      homeSingletonRenderers[name] = createAnimatedRenderer(pack);
+    }
   }
+  const renderers = homeSingletonRenderers;
 
   const switchToNext = () => {
     const cur = currentName();
     const idx = names.indexOf(cur);
     setCurrentName(names[(idx + 1) % names.length]);
-  };
-
-  const applyPos = () => {
-    if (boxRef) {
-      boxRef.translateX = curX;
-      boxRef.translateY = curY;
-    }
   };
 
   onCelebrate((newVersion) => {
@@ -70,106 +72,124 @@ export function HomeMascot(props: HomeMascotProps): JSX.Element {
   onScatter(() => {
   });
 
-  renderers[currentName()].setCharacterHidden(true);
-  renderers[currentName()].setProp(getProp("box") ?? null);
+  if (!homeStartupTriggered) {
+    homeStartupTriggered = true;
+    renderers[currentName()].setCharacterHidden(true);
+    renderers[currentName()].setProp(getProp("box") ?? null);
 
-  const finalY = curY;
-  const finalX = curX;
-  const fallStartY = finalY - 15;
-  const fallDuration = 500;
-  const fallStartTime = Date.now();
-  curY = fallStartY;
-  applyPos();
+    const finalY = curY();
+    const finalX = curX();
+    const fallStartY = finalY - 15;
+    const fallDuration = 500;
+    const fallStartTime = Date.now();
+    setCurY(fallStartY);
 
-  const fallInterval = setInterval(() => {
-    const elapsed = Date.now() - fallStartTime;
-    const t = Math.min(elapsed / fallDuration, 1);
-    const eased = t * t;
-    curY = Math.round(fallStartY + (finalY - fallStartY) * eased);
-    applyPos();
-    if (t >= 1) {
-      clearInterval(fallInterval);
-      curY = finalY;
-      applyPos();
+    const fallInterval = setInterval(() => {
+      const elapsed = Date.now() - fallStartTime;
+      const t = Math.min(elapsed / fallDuration, 1);
+      const eased = t * t;
+      setCurY(Math.round(fallStartY + (finalY - fallStartY) * eased));
+      if (t >= 1) {
+        clearInterval(fallInterval);
+        setCurY(finalY);
 
-      setTimeout(() => {
-        const shakeSeq = [1, -1, 1, -1, 0];
-        let shakeIdx = 0;
-        const shakeInterval = setInterval(() => {
-          if (shakeIdx >= shakeSeq.length) {
-            clearInterval(shakeInterval);
-            curX = finalX;
-            applyPos();
-            return;
-          }
-          curX = finalX + shakeSeq[shakeIdx];
-          applyPos();
-          shakeIdx++;
-        }, 60);
-      }, 2000);
-    }
-  }, 16);
+        setTimeout(() => {
+          const shakeSeq = [1, -1, 1, -1, 0];
+          let shakeIdx = 0;
+          const shakeInterval = setInterval(() => {
+            if (shakeIdx >= shakeSeq.length) {
+              clearInterval(shakeInterval);
+              setCurX(finalX);
+              return;
+            }
+            setCurX(finalX + shakeSeq[shakeIdx]);
+            shakeIdx++;
+          }, 60);
+        }, 2000);
+      }
+    }, 16);
 
-  setTimeout(() => {
-    renderers[currentName()].setProp(null);
-    renderers[currentName()].setCharacterHidden(false);
-  }, 6000);
+    setTimeout(() => {
+      renderers[currentName()].setProp(null);
+      renderers[currentName()].setCharacterHidden(false);
+      const dropStart = curY();
+      const dropEnd = 10;
+      const dropDuration = 300;
+      const dropStartTime = Date.now();
+      const dropInterval = setInterval(() => {
+        const elapsed = Date.now() - dropStartTime;
+        const t = Math.min(elapsed / dropDuration, 1);
+        const eased = t * t;
+        setCurY(Math.round(dropStart + (dropEnd - dropStart) * eased));
+        if (t >= 1) {
+          clearInterval(dropInterval);
+          setCurY(dropEnd);
+        }
+      }, 16);
+    }, 6000);
+  }
 
   const stopDrag = () => {
     isDragging = false;
     renderers[currentName()].setDragging(false);
   };
 
-  return (
-    <box
-      zIndex={zBoost() ? 9999 : 100}
-      flexDirection="column"
-      ref={(node: any) => {
-        boxRef = node;
-        applyPos();
-      }}
-      onMouseDown={(e: any) => {
-        const now = Date.now();
-        if (now - lastClickTime < 300) {
-          switchToNext();
-          lastClickTime = 0;
-          return;
-        }
-        lastClickTime = now;
+  const handleMouseDown = (e: any) => {
+    const now = Date.now();
+    if (now - lastClickTime < 300) {
+      switchToNext();
+      lastClickTime = 0;
+      return;
+    }
+    lastClickTime = now;
+    if (e.modifiers?.alt) {
+      dragStartX = e.x;
+      dragStartY = e.y;
+      dragAnchorX = curX();
+      dragAnchorY = curY();
+      isDragging = true;
+      renderers[currentName()].setDragging(true);
+      props.api.renderer.clearSelection();
+    }
+  };
+  const handleMouseDrag = (e: any) => {
+    if (e.modifiers?.alt && isDragging) {
+      setCurX(dragAnchorX + (e.x - dragStartX));
+      setCurY(dragAnchorY + (e.y - dragStartY));
+    }
+  };
+  const handleMouseUp = () => { stopDrag(); };
 
-        if (e.modifiers?.alt) {
-          dragStartX = e.x;
-          dragStartY = e.y;
-          dragAnchorX = curX;
-          dragAnchorY = curY;
-          isDragging = true;
-          renderers[currentName()].setDragging(true);
-          props.api.renderer.clearSelection();
-        }
-      }}
-      onMouseDrag={(e: any) => {
-        if (e.modifiers?.alt && isDragging) {
-          curX = dragAnchorX + (e.x - dragStartX);
-          curY = dragAnchorY + (e.y - dragStartY);
-          applyPos();
-        }
-      }}
-      onMouseUp={() => { stopDrag(); }}
-      onMouseDragEnd={() => { stopDrag(); }}
-    >
+  return (
+    <>
       {renderers[currentName()]?.propElement() ? (
         <box
           position="absolute"
-          zIndex={50}
-          left={renderers[currentName()].getPropPosition() === "side-left" ? -16 : renderers[currentName()].getPropPosition() === "side-right" ? 12 : 0}
-          top={0}
+          left={renderers[currentName()].getPropPosition() === "front" ? curX() - 4 : curX()}
+          top={renderers[currentName()].getPropPosition() === "front" ? curY() - 5 : curY()}
+          zIndex={zBoost() ? 9998 : 50}
+          onMouseDown={handleMouseDown}
+          onMouseDrag={handleMouseDrag}
+          onMouseUp={handleMouseUp}
+          onMouseDragEnd={handleMouseUp}
         >
           {renderers[currentName()].propElement()}
         </box>
       ) : null}
-      <box zIndex={100}>
-        {renderers[currentName()]?.element() ?? null}
-      </box>
-    </box>
+      {renderers[currentName()]?.element() ? (
+        <box
+          position="absolute"
+          left={curX()}
+          top={curY()}
+          zIndex={zBoost() ? 9999 : 100}
+          onMouseDown={handleMouseDown}
+          onMouseDrag={handleMouseDrag}
+          onMouseUp={handleMouseUp}
+          onMouseDragEnd={handleMouseUp}
+        >
+          {renderers[currentName()].element()}
+        </box>
+      ) : null}
+    </>
   );
 }

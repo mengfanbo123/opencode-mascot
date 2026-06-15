@@ -3,6 +3,7 @@ const bus = new EventTarget();
 const CELEBRATE_EVENT = "mascot:celebrate";
 const VERSION_EVENT = "mascot:version";
 const SCATTER_EVENT = "mascot:scatter";
+const PROP_SHOW_EVENT = "mascot:propshow";
 
 export function emitCelebrate(newVersion: string): void {
   bus.dispatchEvent(new CustomEvent(CELEBRATE_EVENT, { detail: { newVersion } }));
@@ -38,4 +39,14 @@ export function onScatter(handler: () => void): () => void {
   const listener = () => { handler(); };
   bus.addEventListener(SCATTER_EVENT, listener);
   return () => bus.removeEventListener(SCATTER_EVENT, listener);
+}
+
+export function emitPropShow(): void {
+  bus.dispatchEvent(new CustomEvent(PROP_SHOW_EVENT));
+}
+
+export function onPropShow(handler: () => void): () => void {
+  const listener = () => { handler(); };
+  bus.addEventListener(PROP_SHOW_EVENT, listener);
+  return () => bus.removeEventListener(PROP_SHOW_EVENT, listener);
 }
