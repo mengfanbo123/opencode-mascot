@@ -92,19 +92,21 @@ export function HomeMascot(props: HomeMascotProps): JSX.Element {
       curY = finalY;
       applyPos();
 
-      const shakeSeq = [1, -1, 1, -1, 0];
-      let shakeIdx = 0;
-      const shakeInterval = setInterval(() => {
-        if (shakeIdx >= shakeSeq.length) {
-          clearInterval(shakeInterval);
-          curX = finalX;
+      setTimeout(() => {
+        const shakeSeq = [1, -1, 1, -1, 0];
+        let shakeIdx = 0;
+        const shakeInterval = setInterval(() => {
+          if (shakeIdx >= shakeSeq.length) {
+            clearInterval(shakeInterval);
+            curX = finalX;
+            applyPos();
+            return;
+          }
+          curX = finalX + shakeSeq[shakeIdx];
           applyPos();
-          return;
-        }
-        curX = finalX + shakeSeq[shakeIdx];
-        applyPos();
-        shakeIdx++;
-      }, 60);
+          shakeIdx++;
+        }, 60);
+      }, 2000);
     }
   }, 16);
 

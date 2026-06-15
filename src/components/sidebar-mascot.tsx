@@ -236,17 +236,19 @@ export function SidebarMascot(props: SidebarMascotProps): JSX.Element {
       clearInterval(fallInterval);
       setPosY(finalY);
 
-      const shakeSeq = [1, -1, 1, -1, 0];
-      let shakeIdx = 0;
-      const shakeInterval = setInterval(() => {
-        if (shakeIdx >= shakeSeq.length) {
-          clearInterval(shakeInterval);
-          setPosX(finalX);
-          return;
-        }
-        setPosX(finalX + shakeSeq[shakeIdx]);
-        shakeIdx++;
-      }, 60);
+      setTimeout(() => {
+        const shakeSeq = [1, -1, 1, -1, 0];
+        let shakeIdx = 0;
+        const shakeInterval = setInterval(() => {
+          if (shakeIdx >= shakeSeq.length) {
+            clearInterval(shakeInterval);
+            setPosX(finalX);
+            return;
+          }
+          setPosX(finalX + shakeSeq[shakeIdx]);
+          shakeIdx++;
+        }, 60);
+      }, 2000);
     }
   }, 16);
 
