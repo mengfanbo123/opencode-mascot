@@ -74,6 +74,9 @@ export function HomeMascot(props: HomeMascotProps): JSX.Element {
   setTimeout(() => {
     if (!renderers[currentName()].getProp()) {
       renderers[currentName()].setProp(getProp("box") ?? null);
+      setTimeout(() => {
+        renderers[currentName()].setProp(null);
+      }, 6000);
     }
   }, 2500);
 

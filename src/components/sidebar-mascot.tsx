@@ -167,12 +167,11 @@ export function SidebarMascot(props: SidebarMascotProps): JSX.Element {
           renderers[currentName()].setProp(busyProp);
         }, 300);
       } else {
-        renderers[currentName()].setProp(getProp("box") ?? null);
+        renderers[currentName()].setProp(null);
       }
     } else {
       setStateWithSwitch("idle");
-      // idle 时显示箱子常驻
-      renderers[currentName()].setProp(getProp("box") ?? null);
+      renderers[currentName()].setProp(null);
     }
   });
 
@@ -224,10 +223,12 @@ export function SidebarMascot(props: SidebarMascotProps): JSX.Element {
     renderers[currentName()].scatterIn();
   }, 2000);
 
-  // 启动后显示箱子（在 scatter 之后）
   setTimeout(() => {
     if (!renderers[currentName()].getProp()) {
       renderers[currentName()].setProp(getProp("box") ?? null);
+      setTimeout(() => {
+        renderers[currentName()].setProp(null);
+      }, 6000);
     }
   }, 2500);
 
