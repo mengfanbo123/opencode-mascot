@@ -6,6 +6,7 @@ import type { MascotPack, MascotState } from "../core/types";
 import { createAnimatedRenderer } from "../core/ascii-renderer";
 import { onCelebrate, onVersion, onScatter } from "../core/celebration-bus";
 import { pickPropByTrigger } from "../core/prop-loader";
+import { log } from "../core/logger";
 
 interface SidebarMascotProps {
   mascots: Record<string, MascotPack>;
@@ -156,6 +157,7 @@ export function SidebarMascot(props: SidebarMascotProps): JSX.Element {
   props.api.event.on("session.status", (data: unknown) => {
     const payload = data as { type?: string; properties?: { sessionID?: string; status?: { type?: string } } } | null;
     const statusType = payload?.properties?.status?.type;
+    log("DEBUG", `session.status: statusType=${statusType}, full=${JSON.stringify(payload)?.slice(0, 200)}`);
     if (statusType === "busy" || statusType === "retry") {
       if (hideSide) returnToView();
       renderers[currentName()].setState("busy");
