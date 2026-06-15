@@ -71,14 +71,14 @@ export function HomeMascot(props: HomeMascotProps): JSX.Element {
     renderers[currentName()].scatterIn();
   });
 
+  renderers[currentName()].setCharacterHidden(true);
+  renderers[currentName()].setProp(getProp("box") ?? null);
+
   setTimeout(() => {
-    if (!renderers[currentName()].getProp()) {
-      renderers[currentName()].setProp(getProp("box") ?? null);
-      setTimeout(() => {
-        renderers[currentName()].setProp(null);
-      }, 6000);
-    }
-  }, 2500);
+    renderers[currentName()].setProp(null);
+    renderers[currentName()].setCharacterHidden(false);
+    renderers[currentName()].scatterIn();
+  }, 6000);
 
   const stopDrag = () => {
     isDragging = false;

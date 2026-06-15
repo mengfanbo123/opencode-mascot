@@ -50,6 +50,7 @@ export function createAnimatedRenderer(pack: MascotPack): {
   setState: (s: MascotState) => void;
   toggleWalk: () => void;
   setDragging: (v: boolean) => void;
+  setCharacterHidden: (v: boolean) => void;
   celebrateUpdate: (newVersion: string) => void;
   bounce: () => void;
   showVersion: (version: string) => void;
@@ -77,6 +78,7 @@ export function createAnimatedRenderer(pack: MascotPack): {
   const [bomb, setBomb] = createSignal<{ fuse: string; count: string } | null>(null);
   const [scatter, setScatter] = createSignal<{ dx: number; dy: number }[] | null>(null);
   const [activeProp, setActiveProp] = createSignal<PropPack | null>(null);
+  const [characterHidden, setCharacterHiddenSignal] = createSignal(false);
   const [propFrameIdx, setPropFrameIdx] = createSignal(0);
   const [propPosition, setPropPosition] = createSignal<PropPosition | null>(null);
 
@@ -344,7 +346,9 @@ export function createAnimatedRenderer(pack: MascotPack): {
     const width = rawLines[0]?.length ?? 10;
     const blank = " ".repeat(width);
 
-    let lines: string[] = rawLines.map((line, i) => {
+    let lines: string[] = characterHidden()
+      ? rawLines.map(() => blank)
+      : rawLines.map((line, i) => {
       if (!breathPhase()) {
         if (i === 0) return blank;
         return rawLines[i - 1];
@@ -475,6 +479,10 @@ export function createAnimatedRenderer(pack: MascotPack): {
     } else if (currentState() === "idle") {
       walkTimeout = scheduleNextWalk();
     }
+  };
+
+  const setCharacterHidden = (v: boolean) => {
+    setCharacterHiddenSignal(v);
   };
 
   const setDragging = (v: boolean) => {
@@ -650,5 +658,5 @@ export function createAnimatedRenderer(pack: MascotPack): {
 
   const getProp = () => activeProp();
 
-  return { element, getState: currentState, setState, toggleWalk, setDragging, celebrateUpdate, bounce, showVersion, scatterIn, explode, setProp, getProp };
+  return { element, getState: currentState, setState, toggleWalk, setDragging, setCharacterHidden, celebrateUpdate, bounce, showVersion, scatterIn, explode, setProp, getProp };
 }

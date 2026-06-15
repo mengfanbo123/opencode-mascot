@@ -217,20 +217,17 @@ export function SidebarMascot(props: SidebarMascotProps): JSX.Element {
     renderers[currentName()].scatterIn();
   });
 
-  setTimeout(() => {
-    if (scattered) return;
-    scattered = true;
-    renderers[currentName()].scatterIn();
-  }, 2000);
+  renderers[currentName()].setCharacterHidden(true);
+  renderers[currentName()].setProp(getProp("box") ?? null);
 
   setTimeout(() => {
-    if (!renderers[currentName()].getProp()) {
-      renderers[currentName()].setProp(getProp("box") ?? null);
-      setTimeout(() => {
-        renderers[currentName()].setProp(null);
-      }, 6000);
+    renderers[currentName()].setProp(null);
+    renderers[currentName()].setCharacterHidden(false);
+    if (!scattered) {
+      scattered = true;
+      renderers[currentName()].scatterIn();
     }
-  }, 2500);
+  }, 6000);
 
   return (
     <box
