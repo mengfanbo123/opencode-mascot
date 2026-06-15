@@ -5,6 +5,7 @@ import type { JSX } from "@opentui/solid";
 import type { MascotPack, MascotState } from "../core/types";
 import { createAnimatedRenderer } from "../core/ascii-renderer";
 import { onCelebrate, onVersion, onScatter } from "../core/celebration-bus";
+import { pickPropByTrigger, getProp } from "../core/prop-loader";
 
 interface SidebarMascotProps {
   mascots: Record<string, MascotPack>;
@@ -42,6 +43,7 @@ export function SidebarMascot(props: SidebarMascotProps): JSX.Element {
       : names[0];
 
   const [currentName, setCurrentName] = createSignal(initialName);
+  const [userOverride, setUserOverride] = createSignal(false);
   const [posX, setPosX] = createSignal(20);
   const [posY, setPosY] = createSignal(2);
   const [containerWidth, setContainerWidth] = createSignal(0);
@@ -74,6 +76,7 @@ export function SidebarMascot(props: SidebarMascotProps): JSX.Element {
     const cur = currentName();
     const idx = names.indexOf(cur);
     setCurrentName(names[(idx + 1) % names.length]);
+    setUserOverride(true);
   };
 
   const getCw = () => containerWidth() || 30;
@@ -142,6 +145,7 @@ export function SidebarMascot(props: SidebarMascotProps): JSX.Element {
   const setStateWithSwitch = (s: MascotState) => {
     const cur = currentName();
     renderers[cur].setState(s);
+    if (userOverride()) return;
     const target = DEFAULT_STATE_MAP[s];
     if (target && target !== cur && props.mascots[target]) {
       setCurrentName(target);
@@ -155,8 +159,20 @@ export function SidebarMascot(props: SidebarMascotProps): JSX.Element {
     if (statusType === "busy" || statusType === "retry") {
       if (hideSide) returnToView();
       renderers[currentName()].setState("busy");
+      // 先显示箱子"打开"动画300ms，再切换到 busy 道具（道具从箱子里掉出来）
+      const busyProp = pickPropByTrigger("busy");
+      if (busyProp) {
+        renderers[currentName()].setProp(getProp("box") ?? null);
+        setTimeout(() => {
+          renderers[currentName()].setProp(busyProp);
+        }, 300);
+      } else {
+        renderers[currentName()].setProp(getProp("box") ?? null);
+      }
     } else {
       setStateWithSwitch("idle");
+      // idle 时显示箱子常驻
+      renderers[currentName()].setProp(getProp("box") ?? null);
     }
   });
 
@@ -169,7 +185,10 @@ export function SidebarMascot(props: SidebarMascotProps): JSX.Element {
     const target = data as { name?: string } | null;
     if (target?.name) {
       const name = target.name;
-      if (props.mascots[name] && name !== currentName()) setCurrentName(name);
+      if (props.mascots[name] && name !== currentName()) {
+        setCurrentName(name);
+        setUserOverride(true);
+      }
     } else {
       switchToNext();
     }
@@ -204,6 +223,13 @@ export function SidebarMascot(props: SidebarMascotProps): JSX.Element {
     scattered = true;
     renderers[currentName()].scatterIn();
   }, 2000);
+
+  // 启动后显示箱子（在 scatter 之后）
+  setTimeout(() => {
+    if (!renderers[currentName()].getProp()) {
+      renderers[currentName()].setProp(getProp("box") ?? null);
+    }
+  }, 2500);
 
   return (
     <box

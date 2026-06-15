@@ -2,7 +2,7 @@
 
 import { createSignal, onCleanup } from "solid-js";
 import type { JSX } from "@opentui/solid";
-import type { MascotPack, MascotState, EffectTimerCtx, EffectRenderCtx } from "./types";
+import type { MascotPack, MascotState, EffectTimerCtx, EffectRenderCtx, PropPack, PropPosition } from "./types";
 
 const SUPERSCRIPT: Record<string, string> = {
   "0": "⁰", "1": "¹", "2": "²", "3": "³", "4": "⁴",
@@ -55,6 +55,8 @@ export function createAnimatedRenderer(pack: MascotPack): {
   showVersion: (version: string) => void;
   scatterIn: () => void;
   explode: () => void;
+  setProp: (prop: PropPack | null) => void;
+  getProp: () => PropPack | null;
 } {
   const anim = { ...DEFAULT_ANIM, ...pack.animations };
   const fg = pack.colors?.defaultFg || undefined;
@@ -74,7 +76,11 @@ export function createAnimatedRenderer(pack: MascotPack): {
   const [zzz, setZzz] = createSignal<string | null>(null);
   const [bomb, setBomb] = createSignal<{ fuse: string; count: string } | null>(null);
   const [scatter, setScatter] = createSignal<{ dx: number; dy: number }[] | null>(null);
+  const [activeProp, setActiveProp] = createSignal<PropPack | null>(null);
+  const [propFrameIdx, setPropFrameIdx] = createSignal(0);
+  const [propPosition, setPropPosition] = createSignal<PropPosition | null>(null);
 
+  let propTimer: ReturnType<typeof setInterval> | null = null;
   let flashTimer: ReturnType<typeof setInterval> | null = null;
   let dragMsgTimer: ReturnType<typeof setInterval> | null = null;
   let zzzTimer: ReturnType<typeof setInterval> | null = null;
@@ -117,6 +123,9 @@ export function createAnimatedRenderer(pack: MascotPack): {
     if (bombTimer) { clearTimeout(bombTimer); bombTimer = null; }
     if (explodeTimer) { clearTimeout(explodeTimer); explodeTimer = null; }
     setBomb(null);
+  };
+  const stopPropTimer = () => {
+    if (propTimer) { clearInterval(propTimer); propTimer = null; }
   };
 
   const stopAllAnimations = () => {
@@ -302,6 +311,7 @@ export function createAnimatedRenderer(pack: MascotPack): {
     stopFall();
     stopBomb();
     if (zzzTimer) { clearInterval(zzzTimer); zzzTimer = null; }
+    stopPropTimer();
   });
 
   // ─── Render ───
@@ -319,6 +329,9 @@ export function createAnimatedRenderer(pack: MascotPack): {
     scatter();
     bomb();
     versionMsg();
+    activeProp();
+    propFrameIdx();
+    propPosition();
 
     for (const [, [get]] of extraSignals) {
       get();
@@ -349,6 +362,47 @@ export function createAnimatedRenderer(pack: MascotPack): {
           get: getExtra,
         };
       lines = effects.render(lines, renderCtx);
+    }
+
+    // ─── Prop overlay ───
+    const prop = activeProp();
+    if (prop) {
+      const propFramesRaw = Array.isArray(prop.frames[0])
+        ? (prop.frames as string[][])
+        : [prop.frames as string[]];
+      const propLines = propFramesRaw[propFrameIdx() % propFramesRaw.length] ?? propFramesRaw[0];
+
+      if (propLines.length > 0) {
+        const pos = propPosition();
+        if (pos === 'front') {
+          const overlayCount = Math.min(propLines.length, lines.length);
+          const startRow = Math.floor((lines.length - overlayCount) / 2);
+          for (let i = 0; i < overlayCount; i++) {
+            lines[startRow + i] = propLines[i];
+          }
+        } else {
+          const charWidth = lines[0]?.length ?? 0;
+          const propWidth = propLines[0]?.length ?? 0;
+          const charHeight = lines.length;
+          const propHeight = propLines.length;
+          const maxLines = Math.max(charHeight, propHeight);
+          const charPad = Math.floor((maxLines - charHeight) / 2);
+          const propPad = Math.floor((maxLines - propHeight) / 2);
+          const sep = "  ";
+
+          const merged: string[] = [];
+          for (let i = 0; i < maxLines; i++) {
+            const cLine = (i >= charPad && i < charPad + charHeight)
+              ? lines[i - charPad]
+              : " ".repeat(charWidth);
+            const pLine = (i >= propPad && i < propPad + propHeight)
+              ? propLines[i - propPad]
+              : " ".repeat(propWidth);
+            merged.push(pos === 'side-right' ? cLine + sep + pLine : pLine + sep + cLine);
+          }
+          lines = merged;
+        }
+      }
     }
 
     const top = jumpOffset();
@@ -505,7 +559,7 @@ export function createAnimatedRenderer(pack: MascotPack): {
   const showVersion = (version: string) => {
     stopVersion();
     setVersionMsg(`ᵛ${toSuperscript(version)}`);
-    versionTimer = setTimeout(() => { setVersionMsg(null); versionTimer = null; }, 3000);
+    versionTimer = setTimeout(() => { setVersionMsg(null); versionTimer = null; }, 5000);
   };
 
   const scatterIn = () => {
@@ -574,5 +628,27 @@ export function createAnimatedRenderer(pack: MascotPack): {
     }, 700);
   };
 
-  return { element, getState: currentState, setState, toggleWalk, setDragging, celebrateUpdate, bounce, showVersion, scatterIn, explode };
+  const setProp = (prop: PropPack | null) => {
+    setActiveProp(prop);
+    setPropFrameIdx(0);
+    if (prop) {
+      const pos: PropPosition = prop.position === 'random'
+        ? (Math.random() < 0.5 ? 'side-left' : 'side-right')
+        : prop.position;
+      setPropPosition(pos);
+      stopPropTimer();
+      if (Array.isArray(prop.frames[0]) && prop.frameInterval) {
+        propTimer = setInterval(() => {
+          setPropFrameIdx((idx) => (idx + 1) % (prop.frames as string[][]).length);
+        }, prop.frameInterval);
+      }
+    } else {
+      setPropPosition(null);
+      stopPropTimer();
+    }
+  };
+
+  const getProp = () => activeProp();
+
+  return { element, getState: currentState, setState, toggleWalk, setDragging, celebrateUpdate, bounce, showVersion, scatterIn, explode, setProp, getProp };
 }

@@ -36,6 +36,7 @@ const tui: TuiPlugin = async (api, _options) => {
 
   checkAndUpdate(pluginVersion, (newVersion) => {
     emitCelebrate(newVersion);
+    emitVersion(newVersion);
   }).catch(() => {});
 
   setTimeout(() => emitScatter(), 100);

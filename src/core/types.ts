@@ -126,3 +126,26 @@ export interface MascotPack {
   /** Mascot-specific animation effects (timers + render) */
   effects?: MascotEffects;
 }
+
+// ─── Prop system types ───
+
+/** 道具触发条件 */
+export type PropTrigger = 'busy' | 'idle' | 'startup' | 'random';
+
+/** 道具渲染位置 */
+export type PropPosition = 'side-left' | 'side-right' | 'front' | 'random';
+
+/** 道具包定义 */
+export interface PropPack {
+  name: string;
+  /** 静态帧（string[]）或多帧动画（string[][]），每行必须等宽 */
+  frames: string[] | string[][];
+  /** 多帧动画时的帧切换间隔ms，默认 800 */
+  frameInterval?: number;
+  /** 触发条件 */
+  trigger: PropTrigger;
+  /** 默认渲染位置 */
+  position: PropPosition;
+  /** 同trigger多个道具时按权重随机挑选，默认 1 */
+  weight?: number;
+}
