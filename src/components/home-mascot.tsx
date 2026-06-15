@@ -74,6 +74,21 @@ export function HomeMascot(props: HomeMascotProps): JSX.Element {
   renderers[currentName()].setCharacterHidden(true);
   renderers[currentName()].setProp(getProp("box") ?? null);
 
+  const finalY = curY;
+  curY = finalY - 15;
+  applyPos();
+  let fallStep = 0;
+  const fallInterval = setInterval(() => {
+    fallStep++;
+    curY = finalY - 15 + fallStep;
+    applyPos();
+    if (fallStep >= 15) {
+      clearInterval(fallInterval);
+      curY = finalY;
+      applyPos();
+    }
+  }, 30);
+
   setTimeout(() => {
     renderers[currentName()].setProp(null);
     renderers[currentName()].setCharacterHidden(false);

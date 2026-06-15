@@ -220,6 +220,18 @@ export function SidebarMascot(props: SidebarMascotProps): JSX.Element {
   renderers[currentName()].setCharacterHidden(true);
   renderers[currentName()].setProp(getProp("box") ?? null);
 
+  const finalY = posY();
+  setPosY(finalY - 15);
+  let fallStep = 0;
+  const fallInterval = setInterval(() => {
+    fallStep++;
+    setPosY(finalY - 15 + fallStep);
+    if (fallStep >= 15) {
+      clearInterval(fallInterval);
+      setPosY(finalY);
+    }
+  }, 30);
+
   setTimeout(() => {
     renderers[currentName()].setProp(null);
     renderers[currentName()].setCharacterHidden(false);
