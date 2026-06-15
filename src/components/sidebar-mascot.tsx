@@ -209,7 +209,7 @@ export function SidebarMascot(props: SidebarMascotProps): JSX.Element {
     setTimeout(() => setZBoost(false), 3500);
   });
 
-  let scattered = true;
+  let scattered = false;
 
   onScatter(() => {
     if (scattered) return;
@@ -217,45 +217,11 @@ export function SidebarMascot(props: SidebarMascotProps): JSX.Element {
     renderers[currentName()].scatterIn();
   });
 
-  renderers[currentName()].setCharacterHidden(true);
-  renderers[currentName()].setProp(getProp("box") ?? null);
-
-  const finalY = posY();
-  const finalX = posX();
-  const fallStartY = finalY - 15;
-  const fallDuration = 500;
-  const fallStartTime = Date.now();
-  setPosY(fallStartY);
-
-  const fallInterval = setInterval(() => {
-    const elapsed = Date.now() - fallStartTime;
-    const t = Math.min(elapsed / fallDuration, 1);
-    const eased = t * t;
-    setPosY(Math.round(fallStartY + (finalY - fallStartY) * eased));
-    if (t >= 1) {
-      clearInterval(fallInterval);
-      setPosY(finalY);
-
-      setTimeout(() => {
-        const shakeSeq = [1, -1, 1, -1, 0];
-        let shakeIdx = 0;
-        const shakeInterval = setInterval(() => {
-          if (shakeIdx >= shakeSeq.length) {
-            clearInterval(shakeInterval);
-            setPosX(finalX);
-            return;
-          }
-          setPosX(finalX + shakeSeq[shakeIdx]);
-          shakeIdx++;
-        }, 60);
-      }, 2000);
-    }
-  }, 16);
-
   setTimeout(() => {
-    renderers[currentName()].setProp(null);
-    renderers[currentName()].setCharacterHidden(false);
-  }, 6000);
+    if (scattered) return;
+    scattered = true;
+    renderers[currentName()].scatterIn();
+  }, 2000);
 
   return (
     <box
