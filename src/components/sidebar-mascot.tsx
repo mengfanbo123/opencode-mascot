@@ -221,16 +221,34 @@ export function SidebarMascot(props: SidebarMascotProps): JSX.Element {
   renderers[currentName()].setProp(getProp("box") ?? null);
 
   const finalY = posY();
-  setPosY(finalY - 15);
-  let fallStep = 0;
+  const finalX = posX();
+  const fallStartY = finalY - 15;
+  const fallDuration = 500;
+  const fallStartTime = Date.now();
+  setPosY(fallStartY);
+
   const fallInterval = setInterval(() => {
-    fallStep++;
-    setPosY(finalY - 15 + fallStep);
-    if (fallStep >= 15) {
+    const elapsed = Date.now() - fallStartTime;
+    const t = Math.min(elapsed / fallDuration, 1);
+    const eased = t * t;
+    setPosY(Math.round(fallStartY + (finalY - fallStartY) * eased));
+    if (t >= 1) {
       clearInterval(fallInterval);
       setPosY(finalY);
+
+      const shakeSeq = [1, -1, 1, -1, 0];
+      let shakeIdx = 0;
+      const shakeInterval = setInterval(() => {
+        if (shakeIdx >= shakeSeq.length) {
+          clearInterval(shakeInterval);
+          setPosX(finalX);
+          return;
+        }
+        setPosX(finalX + shakeSeq[shakeIdx]);
+        shakeIdx++;
+      }, 60);
     }
-  }, 30);
+  }, 16);
 
   setTimeout(() => {
     renderers[currentName()].setProp(null);

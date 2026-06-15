@@ -74,19 +74,39 @@ export function HomeMascot(props: HomeMascotProps): JSX.Element {
   renderers[currentName()].setProp(getProp("box") ?? null);
 
   const finalY = curY;
-  curY = finalY - 15;
+  const finalX = curX;
+  const fallStartY = finalY - 15;
+  const fallDuration = 500;
+  const fallStartTime = Date.now();
+  curY = fallStartY;
   applyPos();
-  let fallStep = 0;
+
   const fallInterval = setInterval(() => {
-    fallStep++;
-    curY = finalY - 15 + fallStep;
+    const elapsed = Date.now() - fallStartTime;
+    const t = Math.min(elapsed / fallDuration, 1);
+    const eased = t * t;
+    curY = Math.round(fallStartY + (finalY - fallStartY) * eased);
     applyPos();
-    if (fallStep >= 15) {
+    if (t >= 1) {
       clearInterval(fallInterval);
       curY = finalY;
       applyPos();
+
+      const shakeSeq = [1, -1, 1, -1, 0];
+      let shakeIdx = 0;
+      const shakeInterval = setInterval(() => {
+        if (shakeIdx >= shakeSeq.length) {
+          clearInterval(shakeInterval);
+          curX = finalX;
+          applyPos();
+          return;
+        }
+        curX = finalX + shakeSeq[shakeIdx];
+        applyPos();
+        shakeIdx++;
+      }, 60);
     }
-  }, 30);
+  }, 16);
 
   setTimeout(() => {
     renderers[currentName()].setProp(null);
