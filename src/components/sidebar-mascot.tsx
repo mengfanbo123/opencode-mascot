@@ -5,7 +5,7 @@ import type { JSX } from "@opentui/solid";
 import type { MascotPack, MascotState } from "../core/types";
 import { createAnimatedRenderer } from "../core/ascii-renderer";
 import { onCelebrate, onVersion, onScatter } from "../core/celebration-bus";
-import { pickPropByTrigger, getProp } from "../core/prop-loader";
+import { pickPropByTrigger } from "../core/prop-loader";
 
 interface SidebarMascotProps {
   mascots: Record<string, MascotPack>;
@@ -161,9 +161,11 @@ export function SidebarMascot(props: SidebarMascotProps): JSX.Element {
       renderers[currentName()].setState("busy");
       const busyProp = pickPropByTrigger("busy");
       renderers[currentName()].setProp(busyProp);
+      renderers[currentName()].setCharacterHidden(busyProp?.position === "front");
     } else {
       setStateWithSwitch("idle");
       renderers[currentName()].setProp(null);
+      renderers[currentName()].setCharacterHidden(false);
     }
   });
 
@@ -215,75 +217,82 @@ export function SidebarMascot(props: SidebarMascotProps): JSX.Element {
     renderers[currentName()].scatterIn();
   }, 2000);
 
+  const propOffset = () => {
+    const pos = renderers[currentName()]?.getPropPosition();
+    if (pos === "side-left") return -18;
+    if (pos === "side-right") return 12;
+    return 0;
+  };
+
   return (
-    <box
-      position="absolute"
-      left={posX()}
-      top={posY()}
-      alignItems="center"
-      zIndex={zBoost() ? 9999 : 100}
-      flexDirection="column"
-      ref={(node: any) => {
-        if (node) {
-          setContainerWidth(node.width || 0);
-          if (node.onSizeChange !== undefined) {
-            node.onSizeChange = () => {
-              setContainerWidth(node.width || 0);
-            };
-          }
-        }
-      }}
-      onMouseDown={(e: any) => {
-        if (hideSide) { returnToView(); return; }
-
-        const now = Date.now();
-        if (now - lastClickTime < 300) {
-          switchToNext();
-          lastClickTime = 0;
-          return;
-        }
-        lastClickTime = now;
-
-        if (e.modifiers?.alt) {
-          dragStartX = e.x;
-          dragStartY = e.y;
-          dragAnchorX = posX();
-          dragAnchorY = posY();
-          isDragging = true;
-          renderers[currentName()].setDragging(true);
-          props.api.renderer.clearSelection();
-        }
-      }}
-      onMouseDrag={(e: any) => {
-        if (e.modifiers?.alt && isDragging) {
-          setPosX(clampX(dragAnchorX + (e.x - dragStartX)));
-          setPosY(clampY(dragAnchorY + (e.y - dragStartY)));
-        }
-      }}
-      onMouseUp={() => {
-        isDragging = false;
-        renderers[currentName()].setDragging(false);
-        checkEdge();
-      }}
-      onMouseDragEnd={() => {
-        isDragging = false;
-        renderers[currentName()].setDragging(false);
-        checkEdge();
-      }}
-    >
+    <>
       {renderers[currentName()]?.propElement() ? (
         <box
           position="absolute"
-          zIndex={50}
-          left={renderers[currentName()].getPropPosition() === "side-left" ? -16 : renderers[currentName()].getPropPosition() === "side-right" ? 12 : 0}
-          top={0}
+          left={posX() + propOffset()}
+          top={posY()}
+          zIndex={zBoost() ? 9998 : 50}
         >
           {renderers[currentName()].propElement()}
         </box>
       ) : null}
-      <box zIndex={100}>
+      <box
+        position="absolute"
+        left={posX()}
+        top={posY()}
+        alignItems="center"
+        zIndex={zBoost() ? 9999 : 100}
+        flexDirection="column"
+        ref={(node: any) => {
+          if (node) {
+            setContainerWidth(node.width || 0);
+            if (node.onSizeChange !== undefined) {
+              node.onSizeChange = () => {
+                setContainerWidth(node.width || 0);
+              };
+            }
+          }
+        }}
+        onMouseDown={(e: any) => {
+          if (hideSide) { returnToView(); return; }
+
+          const now = Date.now();
+          if (now - lastClickTime < 300) {
+            switchToNext();
+            lastClickTime = 0;
+            return;
+          }
+          lastClickTime = now;
+
+          if (e.modifiers?.alt) {
+            dragStartX = e.x;
+            dragStartY = e.y;
+            dragAnchorX = posX();
+            dragAnchorY = posY();
+            isDragging = true;
+            renderers[currentName()].setDragging(true);
+            props.api.renderer.clearSelection();
+          }
+        }}
+        onMouseDrag={(e: any) => {
+          if (e.modifiers?.alt && isDragging) {
+            setPosX(clampX(dragAnchorX + (e.x - dragStartX)));
+            setPosY(clampY(dragAnchorY + (e.y - dragStartY)));
+          }
+        }}
+        onMouseUp={() => {
+          isDragging = false;
+          renderers[currentName()].setDragging(false);
+          checkEdge();
+        }}
+        onMouseDragEnd={() => {
+          isDragging = false;
+          renderers[currentName()].setDragging(false);
+          checkEdge();
+        }}
+      >
         {renderers[currentName()]?.element() ?? null}
       </box>
-    </box>
+    </>
   );
 }
