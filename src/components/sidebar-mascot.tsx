@@ -209,7 +209,7 @@ export function SidebarMascot(props: SidebarMascotProps): JSX.Element {
     setTimeout(() => setZBoost(false), 3500);
   });
 
-  let scattered = false;
+  let scattered = true;
 
   onScatter(() => {
     if (scattered) return;
@@ -235,10 +235,6 @@ export function SidebarMascot(props: SidebarMascotProps): JSX.Element {
   setTimeout(() => {
     renderers[currentName()].setProp(null);
     renderers[currentName()].setCharacterHidden(false);
-    if (!scattered) {
-      scattered = true;
-      renderers[currentName()].scatterIn();
-    }
   }, 6000);
 
   return (

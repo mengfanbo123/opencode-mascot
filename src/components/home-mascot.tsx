@@ -68,7 +68,6 @@ export function HomeMascot(props: HomeMascotProps): JSX.Element {
   });
 
   onScatter(() => {
-    renderers[currentName()].scatterIn();
   });
 
   renderers[currentName()].setCharacterHidden(true);
@@ -92,7 +91,6 @@ export function HomeMascot(props: HomeMascotProps): JSX.Element {
   setTimeout(() => {
     renderers[currentName()].setProp(null);
     renderers[currentName()].setCharacterHidden(false);
-    renderers[currentName()].scatterIn();
   }, 6000);
 
   const stopDrag = () => {
