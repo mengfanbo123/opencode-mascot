@@ -42,13 +42,15 @@ const [globalPosX, setGlobalPosX] = createSignal(20);
 const [globalPosY, setGlobalPosY] = createSignal(2);
 const [globalPacingX, setGlobalPacingX] = createSignal(0);
 const [globalZBoost, setGlobalZBoost] = createSignal(false);
+const [globalOnMachine, setGlobalOnMachine] = createSignal(false);
+let globalJumping = false;
 let globalScattered = false;
 let globalLastUserY: number | null = null;
 let globalLastUserX: number | null = null;
 let globalFallTimer: ReturnType<typeof setInterval> | null = null;
 
 const fallToWorkY = () => {
-  const targetY = globalLastUserY ?? 25;
+  const targetY = globalLastUserY ?? 30;
   const targetX = globalLastUserX ?? 5;
   const startY = globalPosY();
   const startX = globalPosX();
@@ -106,6 +108,49 @@ const stopBusyPacing = () => {
   if (busyPacingTimer) { clearInterval(busyPacingTimer); busyPacingTimer = null; }
 };
 
+let busyPropRotateTimer: ReturnType<typeof setTimeout> | null = null;
+
+const startBusyPropRotation = () => {
+  const scheduleNext = () => {
+    const delay = 15000 + Math.random() * 10000;
+    busyPropRotateTimer = setTimeout(() => {
+      const r = singletonRenderers?.[globalCurrentName()];
+      if (!r || r.getState() !== "busy") return;
+      if (globalJumping) { scheduleNext(); return; }
+      const newProp = pickPropByTrigger("busy");
+      if (newProp) {
+        r.setProp(newProp);
+        r.setCharacterHidden(newProp.position === "front");
+        if (newProp.name === "pc-case") {
+          stopBusyPacing();
+          globalJumping = true;
+          if (Math.random() < 0.5) {
+            r.bounceSafe();
+            setTimeout(() => setGlobalOnMachine(true), 450);
+            setTimeout(() => { globalJumping = false; startBusyPacing(); }, 950);
+          } else {
+            r.bounceSafe();
+            setTimeout(() => r.fallApart(), 500);
+            setTimeout(() => {
+              r.bounceSafe();
+              setTimeout(() => setGlobalOnMachine(true), 450);
+              setTimeout(() => { globalJumping = false; startBusyPacing(); }, 950);
+            }, 3500);
+          }
+        } else {
+          setGlobalOnMachine(false);
+        }
+      }
+      scheduleNext();
+    }, delay);
+  };
+  scheduleNext();
+};
+
+const stopBusyPropRotation = () => {
+  if (busyPropRotateTimer) { clearTimeout(busyPropRotateTimer); busyPropRotateTimer = null; }
+};
+
 export function SidebarMascot(props: SidebarMascotProps): JSX.Element {
   log("DEBUG", "SidebarMascot mount");
   const names = Object.keys(props.mascots);
@@ -151,12 +196,29 @@ export function SidebarMascot(props: SidebarMascotProps): JSX.Element {
     if (returnTimer) { clearInterval(returnTimer); returnTimer = null; }
   };
 
-  onCleanup(() => { stopPeek(); stopReturn(); });
+  onCleanup(() => { stopPeek(); stopReturn(); stopBusyPropRotation(); });
 
   const switchToNext = () => {
     const cur = currentName();
     const idx = names.indexOf(cur);
-    setCurrentName(names[(idx + 1) % names.length]);
+    const nextName = names[(idx + 1) % names.length];
+
+    const oldRenderer = renderers[cur];
+    const newRenderer = renderers[nextName];
+    const oldState = oldRenderer.getState();
+    const oldProp = oldRenderer.getProp();
+    const oldPropFront = oldRenderer.getPropPosition() === "front";
+
+    oldRenderer.setProp(null);
+    oldRenderer.setCharacterHidden(false);
+
+    newRenderer.setState(oldState);
+    if (oldProp) {
+      newRenderer.setProp(oldProp);
+      newRenderer.setCharacterHidden(oldPropFront);
+    }
+
+    setCurrentName(nextName);
     setUserOverride(true);
   };
 
@@ -237,11 +299,35 @@ export function SidebarMascot(props: SidebarMascotProps): JSX.Element {
           renderers[globalCurrentName()].setProp(busyProp);
           renderers[globalCurrentName()].setCharacterHidden(busyProp?.position === "front");
           fallToWorkY();
+          if (busyProp?.name === "pc-case") {
+            const r = renderers[globalCurrentName()];
+            stopBusyPacing();
+            globalJumping = true;
+            if (Math.random() < 0.5) {
+              r.bounceSafe();
+              setTimeout(() => setGlobalOnMachine(true), 450);
+              setTimeout(() => { globalJumping = false; startBusyPacing(); }, 950);
+            } else {
+              r.bounceSafe();
+              setTimeout(() => r.fallApart(), 500);
+              setTimeout(() => {
+                r.bounceSafe();
+                setTimeout(() => setGlobalOnMachine(true), 450);
+                setTimeout(() => { globalJumping = false; startBusyPacing(); }, 950);
+              }, 3500);
+            }
+          } else {
+            setGlobalOnMachine(false);
+            startBusyPacing();
+          }
+        } else {
+          startBusyPacing();
         }
-        startBusyPacing();
+        startBusyPropRotation();
       } else {
         renderers[globalCurrentName()].setState("idle");
         stopBusyPacing();
+        stopBusyPropRotation();
         if (!globalUserOverride()) {
           const target = DEFAULT_STATE_MAP["idle" as MascotState];
           if (target && target !== globalCurrentName() && singletonRenderers && singletonRenderers[target]) {
@@ -249,6 +335,7 @@ export function SidebarMascot(props: SidebarMascotProps): JSX.Element {
             singletonRenderers[target].setState("idle");
           }
         }
+        setGlobalOnMachine(false);
         renderers[globalCurrentName()].setProp(null);
         renderers[globalCurrentName()].setCharacterHidden(false);
       }
@@ -367,8 +454,8 @@ export function SidebarMascot(props: SidebarMascotProps): JSX.Element {
       {renderers[currentName()].getPropPosition() !== "front" ? (
         <box
           position="absolute"
-          left={posX() + globalPacingX()}
-          top={posY()}
+          left={posX() + globalPacingX() + (globalOnMachine() ? 12 : 0)}
+          top={posY() - (globalOnMachine() ? 4 : 0)}
           alignItems="center"
         zIndex={globalZBoost() ? 9999 : 100}
         flexDirection="column"

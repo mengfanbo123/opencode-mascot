@@ -2,12 +2,14 @@ import type { PropPack, PropTrigger } from "./types";
 import { laptopProp } from "../builtins/props/laptop";
 import { padProp } from "../builtins/props/pad";
 import { boxProp } from "../builtins/props/box";
+import { pcCaseProp } from "../builtins/props/pc-case";
 
 // 内置道具注册表
 const BUILTIN_PROPS: Record<string, PropPack> = {
   laptop: laptopProp,
   pad: padProp,
   box: boxProp,
+  "pc-case": pcCaseProp,
 };
 
 const loaded: Record<string, PropPack> = { ...BUILTIN_PROPS };

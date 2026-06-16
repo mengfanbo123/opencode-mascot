@@ -20,7 +20,7 @@ const W = 14; // 屏幕内容区宽
 
 const TOP = "┌" + "─".repeat(W) + "┐";
 const BOT = "└" + "─".repeat(6) + "||" + "─".repeat(6) + "┘";
-const BASE = "▓".repeat(16);
+const BASE = " ".repeat(4) + "▓".repeat(8) + " ".repeat(4);
 
 const ln = (s: string) => "│" + s.padEnd(W) + "│";
 
@@ -49,7 +49,7 @@ const states = [
 
 const frames: string[][] = states.map((st) => [
   TOP,
-  ln("~$ᵒᵖᵉⁿᶜᵒᵈᵉ"),
+  ln("~$ opencode"),
   ln(st),
   BOT,
   BASE,

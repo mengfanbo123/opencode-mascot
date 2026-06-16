@@ -57,9 +57,11 @@ export function createAnimatedRenderer(pack: MascotPack): {
   setCharacterHidden: (v: boolean) => void;
   celebrateUpdate: (newVersion: string) => void;
   bounce: () => void;
+  bounceSafe: () => void;
   showVersion: (version: string) => void;
   scatterIn: () => void;
   explode: () => void;
+  fallApart: () => void;
   setProp: (prop: PropPack | null) => void;
   getProp: () => PropPack | null;
 } {
@@ -576,6 +578,19 @@ export function createAnimatedRenderer(pack: MascotPack): {
     }, 450));
   };
 
+  const bounceSafe = () => {
+    stopBounce();
+    stopCelebrate();
+    if (currentState() === "sleeping") setState("idle");
+    setJumpOffset(-3);
+    bounceTimers.push(setTimeout(() => setJumpOffset(-2), 150));
+    bounceTimers.push(setTimeout(() => setJumpOffset(-1), 300));
+    bounceTimers.push(setTimeout(() => {
+      setJumpOffset(0);
+      bounceTimers = [];
+    }, 450));
+  };
+
   const fallApart = () => {
     const lineCount = getFrameLines(pack, "default").length;
     const offsets = Array.from({ length: lineCount }, (_, i) => ({
@@ -696,5 +711,5 @@ export function createAnimatedRenderer(pack: MascotPack): {
 
   const getProp = () => activeProp();
 
-  return { element, propElement, getPropPosition: () => propPosition(), getState: currentState, setState, toggleWalk, setDragging, setCharacterHidden, celebrateUpdate, bounce, showVersion, scatterIn, explode, setProp, getProp };
+  return { element, propElement, getPropPosition: () => propPosition(), getState: currentState, setState, toggleWalk, setDragging, setCharacterHidden, celebrateUpdate, bounce, bounceSafe, showVersion, scatterIn, explode, fallApart, setProp, getProp };
 }
