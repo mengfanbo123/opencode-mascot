@@ -5,7 +5,7 @@ import type { JSX } from "@opentui/solid";
 import type { MascotPack, MascotState } from "../core/types";
 import { createAnimatedRenderer } from "../core/ascii-renderer";
 import { onCelebrate, onVersion, onScatter, onPropShow } from "../core/celebration-bus";
-import { pickPropByTrigger } from "../core/prop-loader";
+import { getProp } from "../core/prop-loader";
 import { log } from "../core/logger";
 
 interface SidebarMascotProps {
@@ -43,7 +43,22 @@ const [globalPosY, setGlobalPosY] = createSignal(2);
 const [globalPacingX, setGlobalPacingX] = createSignal(0);
 const [globalZBoost, setGlobalZBoost] = createSignal(false);
 const [globalOnMachine, setGlobalOnMachine] = createSignal(false);
+const [globalRopeVisible, setGlobalRopeVisible] = createSignal(false);
+const [globalPowerLineVisible, setGlobalPowerLineVisible] = createSignal(false);
+const [globalFlyOffset, setGlobalFlyOffset] = createSignal(0);
+const [globalDiving, setGlobalDiving] = createSignal(false);
+const [globalPadVisible, setGlobalPadVisible] = createSignal(false);
+const [globalPadOffsetX, setGlobalPadOffsetX] = createSignal(0);
+const [globalPadFrameIdx, setGlobalPadFrameIdx] = createSignal(0);
+const [globalVibeVisible, setGlobalVibeVisible] = createSignal(false);
+const [globalVibeDots, setGlobalVibeDots] = createSignal(0);
+const [globalVibeColor, setGlobalVibeColor] = createSignal("#FF00FF");
 let globalJumping = false;
+let diveTimer: ReturnType<typeof setInterval> | null = null;
+let padSlideTimer: ReturnType<typeof setInterval> | null = null;
+let padFrameTimer: ReturnType<typeof setInterval> | null = null;
+let vibeTimer: ReturnType<typeof setInterval> | null = null;
+let lastBusySessionId: string | null = null;
 let globalScattered = false;
 let globalLastUserY: number | null = null;
 let globalLastUserX: number | null = null;
@@ -106,49 +121,271 @@ const startBusyPacing = () => {
 
 const stopBusyPacing = () => {
   if (busyPacingTimer) { clearInterval(busyPacingTimer); busyPacingTimer = null; }
+  setGlobalPacingX(0);
 };
 
-let busyPropRotateTimer: ReturnType<typeof setTimeout> | null = null;
+let currentPhase: 0 | 1 | 2 | 3 = 0;
+let phaseSessionId = 0;
+let phaseTimer: ReturnType<typeof setTimeout> | null = null;
+let flyTimer: ReturnType<typeof setInterval> | null = null;
+let fallTimer: ReturnType<typeof setInterval> | null = null;
+let swayTimer: ReturnType<typeof setInterval> | null = null;
 
-const startBusyPropRotation = () => {
-  const scheduleNext = () => {
-    const delay = 15000 + Math.random() * 10000;
-    busyPropRotateTimer = setTimeout(() => {
-      const r = singletonRenderers?.[globalCurrentName()];
-      if (!r || r.getState() !== "busy") return;
-      if (globalJumping) { scheduleNext(); return; }
-      const newProp = pickPropByTrigger("busy");
-      if (newProp) {
-        r.setProp(newProp);
-        r.setCharacterHidden(newProp.position === "front");
-        if (newProp.name === "pc-case") {
-          stopBusyPacing();
-          globalJumping = true;
-          if (Math.random() < 0.5) {
-            r.bounceSafe();
-            setTimeout(() => setGlobalOnMachine(true), 450);
-            setTimeout(() => { globalJumping = false; startBusyPacing(); }, 950);
-          } else {
-            r.bounceSafe();
-            setTimeout(() => r.fallApart(), 500);
-            setTimeout(() => {
-              r.bounceSafe();
-              setTimeout(() => setGlobalOnMachine(true), 450);
-              setTimeout(() => { globalJumping = false; startBusyPacing(); }, 950);
-            }, 3500);
-          }
-        } else {
-          setGlobalOnMachine(false);
-        }
+const stopDive = () => {
+  if (diveTimer) { clearInterval(diveTimer); diveTimer = null; }
+  setGlobalDiving(false);
+};
+
+const stopPadSlide = () => {
+  if (padSlideTimer) { clearInterval(padSlideTimer); padSlideTimer = null; }
+  if (padFrameTimer) { clearInterval(padFrameTimer); padFrameTimer = null; }
+  setGlobalPadVisible(false);
+  setGlobalPadOffsetX(0);
+  singletonRenderers?.[globalCurrentName()]?.setExtra("peekingPad", false);
+};
+
+const stopVibe = () => {
+  if (vibeTimer) { clearInterval(vibeTimer); vibeTimer = null; }
+  setGlobalVibeVisible(false);
+  setGlobalVibeDots(0);
+};
+
+const VIBE_COLORS = ["#FF00FF", "#00FFFF", "#FFFF00", "#00FF00", "#FF6600", "#FF0066"];
+
+const startVibeCoding = (sid: number) => {
+  setGlobalVibeVisible(true);
+  setGlobalVibeDots(0);
+  setGlobalVibeColor(VIBE_COLORS[0]);
+  let tick = 0;
+  let colorIdx = 0;
+  vibeTimer = setInterval(() => {
+    if (sid !== phaseSessionId) { stopVibe(); return; }
+    tick = (tick + 1) % 3;
+    setGlobalVibeDots(tick);
+    colorIdx = (colorIdx + 1) % VIBE_COLORS.length;
+    setGlobalVibeColor(VIBE_COLORS[colorIdx]);
+  }, 300);
+};
+
+const startPadSlideIn = (sid: number, onDone: () => void) => {
+  setGlobalPadVisible(true);
+  const hidden = -18;
+  setGlobalPadOffsetX(hidden);
+  setGlobalPacingX(0);
+  singletonRenderers?.[globalCurrentName()]?.setExtra("peekingPad", true);
+  const peekSteps = [-8, hidden, -4, 0];
+  const pacingSteps = [-2, -3, -4, -5];
+  let i = 0;
+  padSlideTimer = setInterval(() => {
+    if (sid !== phaseSessionId) { stopPadSlide(); return; }
+    setGlobalPadOffsetX(peekSteps[i]);
+    setGlobalPacingX(pacingSteps[i]);
+    i++;
+    if (i >= peekSteps.length) {
+      if (padSlideTimer) { clearInterval(padSlideTimer); padSlideTimer = null; }
+      setGlobalPacingX(0);
+      singletonRenderers?.[globalCurrentName()]?.setExtra("peekingPad", false);
+      const pad = getProp("pad");
+      if (pad && Array.isArray(pad.frames[0])) {
+        const total = (pad.frames as string[][]).length;
+        padFrameTimer = setInterval(() => {
+          if (sid !== phaseSessionId) { if (padFrameTimer) { clearInterval(padFrameTimer); padFrameTimer = null; } return; }
+          setGlobalPadFrameIdx((idx) => (idx + 1) % total);
+        }, pad.frameInterval ?? 1000);
       }
-      scheduleNext();
-    }, delay);
-  };
-  scheduleNext();
+      onDone();
+    }
+  }, 300);
 };
 
-const stopBusyPropRotation = () => {
-  if (busyPropRotateTimer) { clearTimeout(busyPropRotateTimer); busyPropRotateTimer = null; }
+const startPadSlideOut = (sid: number, onDone: () => void) => {
+  const start = Date.now();
+  const duration = 600;
+  const startX = globalPadOffsetX();
+  const targetX = -20;
+  if (padFrameTimer) { clearInterval(padFrameTimer); padFrameTimer = null; }
+  padSlideTimer = setInterval(() => {
+    if (sid !== phaseSessionId) { stopPadSlide(); return; }
+    const t = Math.min((Date.now() - start) / duration, 1);
+    const eased = t * t; // easeInQuad
+    setGlobalPadOffsetX(Math.round(startX + (targetX - startX) * eased));
+    if (t >= 1) {
+      stopPadSlide();
+      onDone();
+    }
+  }, 16);
+};
+
+const stopPhaseMachine = () => {
+  phaseSessionId++; // invalidate all in-flight callbacks
+  if (phaseTimer) { clearTimeout(phaseTimer); phaseTimer = null; }
+  stopFlyAnimation();
+  stopDive();
+  stopPadSlide();
+  stopVibe();
+  setGlobalRopeVisible(false);
+  setGlobalPowerLineVisible(false);
+  setGlobalFlyOffset(0);
+  setGlobalOnMachine(false);
+  currentPhase = 0;
+  globalJumping = false;
+};
+
+const stopFlyAnimation = () => {
+  if (flyTimer) { clearInterval(flyTimer); flyTimer = null; }
+  if (fallTimer) { clearInterval(fallTimer); fallTimer = null; }
+  if (swayTimer) { clearInterval(swayTimer); swayTimer = null; }
+};
+
+const startFlySequence = (sid: number, onFallStart: () => void, onComplete: () => void) => {
+  setGlobalRopeVisible(true);
+  setGlobalFlyOffset(0);
+  const targetY = -28;
+  const flyDuration = 5000;
+  const flyStart = Date.now();
+  flyTimer = setInterval(() => {
+    if (sid !== phaseSessionId) { if (flyTimer) { clearInterval(flyTimer); flyTimer = null; } return; }
+    const t = Math.min((Date.now() - flyStart) / flyDuration, 1);
+    const base = targetY * t;
+    const wobble = Math.sin(t * Math.PI * 6) * 2 * (1 - t);
+    setGlobalFlyOffset(Math.round(base + wobble));
+    if (t >= 1) {
+      if (flyTimer) { clearInterval(flyTimer); flyTimer = null; }
+      setTimeout(() => {
+        if (sid !== phaseSessionId) return;
+        onFallStart();
+        const fallStart = Date.now();
+        const fallDuration = 800;
+        fallTimer = setInterval(() => {
+          if (sid !== phaseSessionId) { if (fallTimer) { clearInterval(fallTimer); fallTimer = null; } return; }
+          const ft = Math.min((Date.now() - fallStart) / fallDuration, 1);
+          const eased = ft * ft;
+          setGlobalFlyOffset(Math.round(targetY * (1 - eased)));
+          if (ft >= 1) {
+            if (fallTimer) { clearInterval(fallTimer); fallTimer = null; }
+            setGlobalFlyOffset(0);
+            setGlobalRopeVisible(false);
+            if (swayTimer) { clearInterval(swayTimer); swayTimer = null; }
+            onComplete();
+          }
+        }, 16);
+      }, 1000);
+    }
+  }, 16);
+};
+
+const startDiveSequence = (sid: number, onDone: () => void) => {
+  setGlobalDiving(true);
+  const diveStart = Date.now();
+  const diveDuration = 500;
+  const startY = globalPosY();
+  const sinkY = 3; // sink 3 rows down into machine
+  diveTimer = setInterval(() => {
+    if (sid !== phaseSessionId) { stopDive(); return; }
+    const t = Math.min((Date.now() - diveStart) / diveDuration, 1);
+    setGlobalPosY(Math.round(startY + sinkY * t));
+    if (t >= 1) {
+      stopDive();
+      onDone();
+    }
+  }, 16);
+};
+
+const enterPhase1 = () => {
+  if (globalJumping) return;
+  const sid = phaseSessionId;
+  currentPhase = 1;
+  setGlobalPosY(30);
+  log("DEBUG", `enterPhase${currentPhase} sid=${sid}`);
+  const r = singletonRenderers?.[globalCurrentName()];
+  if (!r) return;
+  stopBusyPacing();
+  globalJumping = true;
+  const pcCase = getProp("pc-case");
+  if (!pcCase) return;
+  r.setProp(pcCase);
+  r.setSecondaryProp(null);
+  r.setCharacterHidden(false);
+  setGlobalOnMachine(false);
+  setGlobalPowerLineVisible(true);
+  r.bounceSafe();
+  setTimeout(() => { if (sid !== phaseSessionId) return; setGlobalOnMachine(true); }, 450);
+  setTimeout(() => {
+    if (sid !== phaseSessionId) { log("DEBUG", `enterPhase1: mid aborted sid=${sid}`); return; }
+    globalJumping = false;
+    startBusyPacing();
+    setTimeout(() => {
+      if (sid !== phaseSessionId) return;
+      stopBusyPacing();
+      startFlySequence(
+        sid,
+        () => {
+          const laptop = getProp("laptop");
+          if (laptop) r.setSecondaryProp(laptop);
+        },
+        () => {
+          startDiveSequence(sid, () => {
+            r.setCharacterHidden(true);
+            setGlobalPosY(30); // reset Y for next cycle
+            enterPhase2();
+          });
+        }
+      );
+    }, 2000);
+  }, 950);
+};
+
+const enterPhase2 = () => {
+  currentPhase = 2;
+  const sid = phaseSessionId;
+  log("DEBUG", `enterPhase${currentPhase} sid=${sid}`);
+  const r = singletonRenderers?.[globalCurrentName()];
+  if (!r) return;
+  const laptop = getProp("laptop");
+  if (!laptop) return;
+  log("DEBUG", `enterPhase2: mainProp=${r.getProp()?.name}, propPos=${r.getPropPosition()}`);
+  setGlobalOnMachine(false);
+  r.setCharacterHidden(false);
+  startVibeCoding(sid);
+  phaseTimer = setTimeout(() => enterPhase3(), 60000);
+};
+
+const enterPhase3 = () => {
+  currentPhase = 3;
+  const sid = phaseSessionId;
+  log("DEBUG", `enterPhase${currentPhase} sid=${sid}`);
+  const r = singletonRenderers?.[globalCurrentName()];
+  if (!r) return;
+  r.setCharacterHidden(false);
+  setGlobalOnMachine(false);
+  setTimeout(() => {
+    if (sid !== phaseSessionId) return;
+    startPadSlideIn(sid, () => {
+      log("DEBUG", `phase3 pad slid in sid=${sid}`);
+      r.setCharacterHidden(true);
+      phaseTimer = setTimeout(() => {
+        if (sid !== phaseSessionId) return;
+        startPadSlideOut(sid, () => {
+          if (sid !== phaseSessionId) return;
+          stopVibe();
+          r.setProp(null);
+          r.setSecondaryProp(null);
+          setGlobalPosY(Math.max(10, globalPosY() - 10));
+          r.setCharacterHidden(false);
+          fallToWorkY();
+          setTimeout(() => {
+            if (sid !== phaseSessionId) return;
+            enterPhase1();
+          }, 800);
+        });
+      }, 30000);
+    });
+  }, 800);
+};
+
+const startPhaseMachine = () => {
+  if (currentPhase > 0) return;
+  enterPhase1();
 };
 
 export function SidebarMascot(props: SidebarMascotProps): JSX.Element {
@@ -196,7 +433,7 @@ export function SidebarMascot(props: SidebarMascotProps): JSX.Element {
     if (returnTimer) { clearInterval(returnTimer); returnTimer = null; }
   };
 
-  onCleanup(() => { stopPeek(); stopReturn(); stopBusyPropRotation(); });
+  onCleanup(() => { stopPeek(); stopReturn(); });
 
   const switchToNext = () => {
     const cur = currentName();
@@ -207,16 +444,21 @@ export function SidebarMascot(props: SidebarMascotProps): JSX.Element {
     const newRenderer = renderers[nextName];
     const oldState = oldRenderer.getState();
     const oldProp = oldRenderer.getProp();
-    const oldPropFront = oldRenderer.getPropPosition() === "front";
+    const oldSecondaryProp = oldRenderer.getSecondaryProp();
+    const oldHidden = oldRenderer.getCharacterHidden();
 
     oldRenderer.setProp(null);
+    oldRenderer.setSecondaryProp(null);
     oldRenderer.setCharacterHidden(false);
 
     newRenderer.setState(oldState);
     if (oldProp) {
       newRenderer.setProp(oldProp);
-      newRenderer.setCharacterHidden(oldPropFront);
     }
+    if (oldSecondaryProp) {
+      newRenderer.setSecondaryProp(oldSecondaryProp);
+    }
+    newRenderer.setCharacterHidden(oldHidden);
 
     setCurrentName(nextName);
     setUserOverride(true);
@@ -294,40 +536,23 @@ export function SidebarMascot(props: SidebarMascotProps): JSX.Element {
       log("DEBUG", `session.status: statusType=${statusType}`);
       if (statusType === "busy" || statusType === "retry") {
         renderers[globalCurrentName()].setState("busy");
-        if (!renderers[globalCurrentName()].getProp()) {
-          const busyProp = pickPropByTrigger("busy");
-          renderers[globalCurrentName()].setProp(busyProp);
-          renderers[globalCurrentName()].setCharacterHidden(busyProp?.position === "front");
+        const sessionId = payload?.properties?.sessionID ?? null;
+        if (sessionId !== lastBusySessionId) {
+          lastBusySessionId = sessionId;
+          stopPhaseMachine();
+          const r = renderers[globalCurrentName()];
+          r.setProp(null);
+          r.setSecondaryProp(null);
+          r.setCharacterHidden(false);
+          setGlobalOnMachine(false);
           fallToWorkY();
-          if (busyProp?.name === "pc-case") {
-            const r = renderers[globalCurrentName()];
-            stopBusyPacing();
-            globalJumping = true;
-            if (Math.random() < 0.5) {
-              r.bounceSafe();
-              setTimeout(() => setGlobalOnMachine(true), 450);
-              setTimeout(() => { globalJumping = false; startBusyPacing(); }, 950);
-            } else {
-              r.bounceSafe();
-              setTimeout(() => r.fallApart(), 500);
-              setTimeout(() => {
-                r.bounceSafe();
-                setTimeout(() => setGlobalOnMachine(true), 450);
-                setTimeout(() => { globalJumping = false; startBusyPacing(); }, 950);
-              }, 3500);
-            }
-          } else {
-            setGlobalOnMachine(false);
-            startBusyPacing();
-          }
-        } else {
-          startBusyPacing();
+          setTimeout(() => startPhaseMachine(), 1200);
         }
-        startBusyPropRotation();
       } else {
         renderers[globalCurrentName()].setState("idle");
         stopBusyPacing();
-        stopBusyPropRotation();
+        stopPhaseMachine();
+        lastBusySessionId = null;
         if (!globalUserOverride()) {
           const target = DEFAULT_STATE_MAP["idle" as MascotState];
           if (target && target !== globalCurrentName() && singletonRenderers && singletonRenderers[target]) {
@@ -336,6 +561,7 @@ export function SidebarMascot(props: SidebarMascotProps): JSX.Element {
           }
         }
         setGlobalOnMachine(false);
+        renderers[globalCurrentName()].setSecondaryProp(null);
         renderers[globalCurrentName()].setProp(null);
         renderers[globalCurrentName()].setCharacterHidden(false);
       }
@@ -398,7 +624,8 @@ export function SidebarMascot(props: SidebarMascotProps): JSX.Element {
   const propOffset = () => {
     const pos = renderers[currentName()]?.getPropPosition();
     if (pos === "side-left") return -18;
-    if (pos === "side-right") return 12;
+    if (pos === "side-right") return Math.max(18, getCw() - 10);
+    if (pos === "front") return -5;
     return 0;
   };
 
@@ -437,27 +664,86 @@ export function SidebarMascot(props: SidebarMascotProps): JSX.Element {
 
   return (
     <>
-      {renderers[currentName()]?.propElement() ? (
-        <box
-          position="absolute"
-          left={posX() + propOffset()}
-          top={posY()}
-          zIndex={globalZBoost() ? 9998 : 50}
-          onMouseDown={handleMouseDown}
-          onMouseDrag={handleMouseDrag}
-          onMouseUp={handleMouseUp}
-          onMouseDragEnd={handleMouseUp}
-        >
-          {renderers[currentName()].propElement()}
+      {globalRopeVisible() ? (
+        <box position="absolute" left={posX() + propOffset() + 4} top={0} zIndex={40} flexDirection="column" width={3}>
+          {Array.from({ length: Math.max(0, posY() - 4) }, (_, i) => (
+            <text fg="#FFD700">{i % 2 === 0 ? "├─┤" : "│ │"}</text>
+          ))}
         </box>
       ) : null}
-      {renderers[currentName()].getPropPosition() !== "front" ? (
+      {renderers[currentName()]?.propElement() ? (() => {
+        const isPad = renderers[currentName()]?.getProp()?.name === "pad";
+        return (
+          <box
+            position="absolute"
+            left={posX() + (isPad ? -1 : propOffset())}
+            top={posY() - (isPad ? 2 : 0)}
+            zIndex={globalZBoost() ? 9998 : (isPad ? 45 : 50)}
+            onMouseDown={handleMouseDown}
+            onMouseDrag={handleMouseDrag}
+            onMouseUp={handleMouseUp}
+            onMouseDragEnd={handleMouseUp}
+          >
+            {renderers[currentName()].propElement()}
+          </box>
+        );
+      })() : null}
+      {globalPowerLineVisible() ? (
+        <box position="absolute" left={posX() + propOffset() + 10} top={posY() + 4} zIndex={49}>
+          <text fg="#888888">{"━".repeat(80)}</text>
+        </box>
+      ) : null}
+      {renderers[currentName()]?.secondaryPropElement() ? (
         <box
           position="absolute"
-          left={posX() + globalPacingX() + (globalOnMachine() ? 12 : 0)}
-          top={posY() - (globalOnMachine() ? 4 : 0)}
+          left={posX() + propOffset() - 3}
+          top={posY() - 5 + globalFlyOffset()}
+          zIndex={globalZBoost() ? 9998 : 50}
+        >
+          {renderers[currentName()].secondaryPropElement()}
+        </box>
+      ) : null}
+      {globalPadVisible() ? (() => {
+        const pad = getProp("pad");
+        if (!pad) return null;
+        const fg = props.mascots[currentName()]?.colors?.defaultFg || undefined;
+        const framesRaw = Array.isArray(pad.frames[0]) ? (pad.frames as string[][]) : [pad.frames as string[]];
+        const lines = framesRaw[globalPadFrameIdx() % framesRaw.length] ?? framesRaw[0];
+        return (
+          <box
+            position="absolute"
+            left={posX() + globalPadOffsetX() - 1}
+            top={posY() - 2}
+            zIndex={globalZBoost() ? 9998 : 45}
+            flexDirection="column"
+          >
+            {lines.map((line: string) => (
+              <text fg={fg}>{line}</text>
+            ))}
+          </box>
+        );
+      })() : null}
+      {globalVibeVisible() ? (() => {
+        const dots = "·".repeat(globalVibeDots() + 1);
+        const pad = " ".repeat(Math.max(0, 3 - dots.length));
+        return (
+          <box
+            position="absolute"
+            left={posX() + propOffset() - 3}
+            top={posY() - 6}
+            zIndex={globalZBoost() ? 9999 : 60}
+          >
+            <text fg={globalVibeColor()}>{`ᵛⁱᵇᵉ ᶜᵒᵈⁱⁿᵍ ${dots}${pad}`}</text>
+          </box>
+        );
+      })() : null}
+      {renderers[currentName()].getPropPosition() !== "front" && !renderers[currentName()].getCharacterHidden() ? (
+        <box
+          position="absolute"
+          left={posX() + globalPacingX() + (globalOnMachine() ? propOffset() : 0)}
+          top={posY() - (globalOnMachine() ? 4 : 0) + globalFlyOffset()}
           alignItems="center"
-        zIndex={globalZBoost() ? 9999 : 100}
+        zIndex={globalZBoost() ? 9999 : (globalDiving() ? 40 : 100)}
         flexDirection="column"
         ref={(node: any) => {
           if (node) {

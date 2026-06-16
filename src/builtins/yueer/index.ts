@@ -20,6 +20,7 @@ const yueerEffects: MascotPack["effects"] = {
     { name: "thinkingFaceIdx", initial: 0 },
     { name: "thinkingCountdown", initial: 0 },
     { name: "flapAlt", initial: false },
+    { name: "peekingPad", initial: false },
   ],
 
   timers: [
@@ -98,6 +99,7 @@ const yueerEffects: MascotPack["effects"] = {
     const stompActive = get("stompActive") as boolean;
     const stompAlt = get("stompAlt") as boolean;
     const flapAlt = get("flapAlt") as boolean;
+    const peekingPad = get("peekingPad") as boolean;
 
     if (dragging) {
       const faceLine = result.findIndex((l) => /\(.*\)/.test(l));
@@ -162,6 +164,13 @@ const yueerEffects: MascotPack["effects"] = {
       const ahogeLine = result.findIndex(l => l.includes("☆") || l.includes("★"));
       if (ahogeLine >= 0) {
         result[ahogeLine] = result[ahogeLine].trimEnd() + " " + BUBBLE_TEXTS[idx];
+      }
+    }
+
+    if (peekingPad) {
+      const faceIdx = result.findIndex((l) => /\(.*\)/.test(l));
+      if (faceIdx >= 0) {
+        result[faceIdx] = result[faceIdx].replace(/\(.*?\)/, "( <_< )");
       }
     }
 

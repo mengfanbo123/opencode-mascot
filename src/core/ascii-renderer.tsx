@@ -49,7 +49,9 @@ function getFrameLines(pack: MascotPack, frameName: string): string[] {
 export function createAnimatedRenderer(pack: MascotPack): {
   element: () => JSX.Element;
   propElement: () => JSX.Element | null;
+  secondaryPropElement: () => JSX.Element | null;
   getPropPosition: () => PropPosition | null;
+  getCharacterHidden: () => boolean;
   getState: () => MascotState;
   setState: (s: MascotState) => void;
   toggleWalk: () => void;
@@ -63,7 +65,10 @@ export function createAnimatedRenderer(pack: MascotPack): {
   explode: () => void;
   fallApart: () => void;
   setProp: (prop: PropPack | null) => void;
+  setSecondaryProp: (prop: PropPack | null) => void;
   getProp: () => PropPack | null;
+  getSecondaryProp: () => PropPack | null;
+  setExtra: (name: string, value: unknown) => void;
 } {
   const anim = { ...DEFAULT_ANIM, ...pack.animations };
   const fg = pack.colors?.defaultFg || undefined;
@@ -84,11 +89,14 @@ export function createAnimatedRenderer(pack: MascotPack): {
   const [bomb, setBomb] = createSignal<{ fuse: string; count: string } | null>(null);
   const [scatter, setScatter] = createSignal<{ dx: number; dy: number }[] | null>(null);
   const [activeProp, setActiveProp] = createSignal<PropPack | null>(null);
+  const [secondaryProp, setSecondaryPropSignal] = createSignal<PropPack | null>(null);
   const [characterHidden, setCharacterHiddenSignal] = createSignal(false);
   const [propFrameIdx, setPropFrameIdx] = createSignal(0);
   const [propPosition, setPropPosition] = createSignal<PropPosition | null>(null);
+  const [secondaryPropFrameIdx, setSecondaryPropFrameIdx] = createSignal(0);
 
   let propTimer: ReturnType<typeof setInterval> | null = null;
+  let secondaryPropTimer: ReturnType<typeof setInterval> | null = null;
   let flashTimer: ReturnType<typeof setInterval> | null = null;
   let dragMsgTimer: ReturnType<typeof setInterval> | null = null;
   let zzzTimer: ReturnType<typeof setInterval> | null = null;
@@ -134,6 +142,9 @@ export function createAnimatedRenderer(pack: MascotPack): {
   };
   const stopPropTimer = () => {
     if (propTimer) { clearInterval(propTimer); propTimer = null; }
+  };
+  const stopSecondaryPropTimer = () => {
+    if (secondaryPropTimer) { clearInterval(secondaryPropTimer); secondaryPropTimer = null; }
   };
 
   const stopAllAnimations = () => {
@@ -360,6 +371,7 @@ export function createAnimatedRenderer(pack: MascotPack): {
     stopScatter();
     stopFall();
     stopBomb();
+    stopSecondaryPropTimer();
     if (zzzTimer) { clearInterval(zzzTimer); zzzTimer = null; }
   });
 
@@ -452,6 +464,26 @@ export function createAnimatedRenderer(pack: MascotPack): {
       ? (prop.frames as string[][])
       : [prop.frames as string[]];
     const propLines = propFramesRaw[propFrameIdx() % propFramesRaw.length] ?? propFramesRaw[0];
+
+    return (
+      <box flexDirection="column" alignItems="flex-start">
+        {propLines.map((line: string) => (
+          <text fg={fg}>{line}</text>
+        ))}
+      </box>
+    );
+  };
+
+  const secondaryPropElement = () => {
+    secondaryProp();
+    secondaryPropFrameIdx();
+    const prop = secondaryProp();
+    if (!prop) return null;
+
+    const propFramesRaw = Array.isArray(prop.frames[0])
+      ? (prop.frames as string[][])
+      : [prop.frames as string[]];
+    const propLines = propFramesRaw[secondaryPropFrameIdx() % propFramesRaw.length] ?? propFramesRaw[0];
 
     return (
       <box flexDirection="column" alignItems="flex-start">
@@ -709,7 +741,26 @@ export function createAnimatedRenderer(pack: MascotPack): {
     }
   };
 
+  const setSecondaryProp = (prop: PropPack | null) => {
+    setSecondaryPropSignal(prop);
+    setSecondaryPropFrameIdx(0);
+    stopSecondaryPropTimer();
+    if (prop && Array.isArray(prop.frames[0]) && prop.frameInterval) {
+      const totalFrames = (prop.frames as string[][]).length;
+      const randomize = prop.name === "laptop";
+      secondaryPropTimer = setInterval(() => {
+        if (randomize) {
+          setSecondaryPropFrameIdx(Math.floor(Math.random() * totalFrames));
+        } else {
+          setSecondaryPropFrameIdx((idx) => (idx + 1) % totalFrames);
+        }
+      }, prop.frameInterval);
+    }
+  };
+
+  const getSecondaryProp = () => secondaryProp();
+
   const getProp = () => activeProp();
 
-  return { element, propElement, getPropPosition: () => propPosition(), getState: currentState, setState, toggleWalk, setDragging, setCharacterHidden, celebrateUpdate, bounce, bounceSafe, showVersion, scatterIn, explode, fallApart, setProp, getProp };
+  return { element, propElement, secondaryPropElement, getPropPosition: () => propPosition(), getCharacterHidden: () => characterHidden(), getState: currentState, setState, toggleWalk, setDragging, setCharacterHidden, celebrateUpdate, bounce, bounceSafe, showVersion, scatterIn, explode, fallApart, setProp, getProp, setSecondaryProp, getSecondaryProp, setExtra };
 }

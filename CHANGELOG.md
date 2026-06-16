@@ -2,6 +2,33 @@
 
 本项目版本号遵循 semver。每个版本列出主要变更。
 
+## [0.8.2] - 2025-06-17
+
+### Added
+- phase machine 完整流程：phase1（跳机箱+爬梯+dive钻入）→ phase2（显示器+vibe彩色闪动+小人罚站）→ phase3（pad peek躲猫猫+三prop同屏）→ phase1 循环
+- dive 钻入机箱动画：fall 完成后 posY 下沉3格，zIndex 降到40被机箱遮挡，500ms 后 hidden 进入 phase2
+- vibe coding 彩色闪动：phase2 显示器上方显示 `ᵛⁱᵇᵉ ᶜᵒᵈⁱⁿᵍ` 火星文，6色循环（品红/青/黄/绿/橙/玫红），300ms 切色 + dots 打字动画同步
+- phase3 pad peek 躲猫猫：7步序列探出缩回，pad 与小人联动（小人眼睛 `<_<` 瞟向 pad + pacing 持续向左靠近模拟拽 pad）
+- 机箱电源线：phase1/phase2 期间从机箱右侧延伸灰色 `━` 横线到 sidebar 最右被边缘裁掉
+- pad 滑出后下落动画：pad 消失→小人跳出→抬高10格→easeInQuad 下落→落地停留→再跳机箱
+
+### Changed
+- pc-case 变窄：CW 9→7（总宽12→10），更像机箱
+- phase3 时长缩短：pad peek 7步350ms→4步300ms，总时长 120s→30s
+- idle pad 位置修复：独立 box 渲染，left=posX()-1, top=posY()-2, zIndex=45（参考 phase3 pad 位置，避免被兄弟元素遮挡）
+- vibe 隐藏时机：从 enterPhase3 入口改为 pad slideOut onDone（pad 消失时 vibe 才跟着隐藏）
+
+### Fixed
+- 梯子不可见：box 加 `flexDirection="column" width={3}`（opentui 默认 row 水平排列裁掉）
+- 小人爬完掉左边：fall 动画 onComplete 删 `setGlobalOnMachine(false)`，fall 后 onMachine 保持 true
+- pacingX 残留偏移：stopBusyPacing 清 timer 时 reset pacingX=0
+- 多次 busy 竞态：加 phaseSessionId token，stopPhaseMachine 时 bump，异步回调执行前 check sid 丢弃旧回调
+- onCleanup 误调 stopPhaseMachine：组件重挂载→phaseSessionId++→enterPhase1 回调被 token 判废，去掉 stopPhaseMachine 调用，phase machine 单例跨挂载保持
+- 双击切角色 bug：switchToNext 只传 mainProp 丢 secondaryProp + characterHidden 用 oldPropFront 判断错，修复为传 getSecondaryProp + 真实 getCharacterHidden
+- pad 联动失效：pacingSteps 正负交替抵消净位移≈0，改为持续递增负值 `[-2,-3,-4,-5]`
+- 眼睛瞟左失效：peekingPad 判断在 thinking/busy 脸替换之前被覆盖，移到 render 末尾最后生效
+- p3→p1 转场 pad 隐藏后小人立即跳机箱：加 800ms 落地停留延迟
+
 ## [0.8.0] - 2025-06-16
 
 ### Added
