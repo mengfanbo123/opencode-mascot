@@ -124,6 +124,23 @@ Each character includes **5 expression frames**: default / blink / happy / think
 
 ---
 
+### 🔄 Phase Machine (Work Page)
+
+A 4-phase animation cycle triggered on `session busy`:
+
+| Phase | Duration | Animation |
+|-------|----------|-----------|
+| **Phase 1** | ~15s | Character jumps onto pc-case → paces → golden ladder drops from top → climbs up → monitor falls from ceiling → character dives into the case (sinks 3 rows, zIndex drops below case) |
+| **Phase 2** | 60s | Monitor shows alien-text work status + **vibe coding** rainbow text (`ᵛⁱᵇᵉ ᶜᵒᵈⁱⁿᵍ` cycling 6 colors every 300ms) above monitor → character emerges from case left side and stands still |
+| **Phase 3** | 30s | **Pad peek-a-boo**: pad slides out from left with 4-step peek sequence, character's eyes glance left (`<_<`) + paces toward pad simulating pulling it out. Three props on screen simultaneously (pc-case + monitor + pad) |
+| **Cycle** | → Phase 1 | Pad slides out → character drops down (easeInQuad 500ms) → 800ms landing pause → bounce jump back to pc-case |
+
+**Power line:** During phase 1 & 2, a gray `━` line extends from the pc-case right side to the sidebar edge (clipped by edge).
+
+**Race condition protection:** `phaseSessionId` token invalidates stale callbacks on new busy/idle events.
+
+---
+
 ### 🔄 Auto-Update
 
 - Checks npm latest version on startup → semver compare → `npm pack` download → `tar` extract overwrite
@@ -239,6 +256,7 @@ All built-in animations (blink/breath/walk/jump/sleep/drag/color-flash/bomb/fall
 | Auto animations | 22 |
 | Props (monitor/pad/box) | 3 |
 | Prop animation frames | 39 (20+15+4) |
+| Phase machine animations | 4 (jump+ladder+dive / vibe+stand / pad-peek / cycle) |
 | Interactions | 5 |
 | Peek-a-boo behaviors | 3 |
 | Random events | 3 |
@@ -248,7 +266,7 @@ All built-in animations (blink/breath/walk/jump/sleep/drag/color-flash/bomb/fall
 | Alien text phrases | 24 (12/character) |
 | Flash colors | 8 |
 | Drag alien text | 6 |
-| **Total** | **50+** |
+| **Total** | **60+** |
 
 ## 📄 License
 
