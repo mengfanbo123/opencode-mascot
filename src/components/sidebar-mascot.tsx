@@ -368,6 +368,7 @@ const enterPhase3 = () => {
         startPadSlideOut(sid, () => {
           if (sid !== phaseSessionId) return;
           stopVibe();
+          setGlobalPowerLineVisible(false);
           r.setProp(null);
           r.setSecondaryProp(null);
           setGlobalPosY(Math.max(10, globalPosY() - 10));

@@ -2,6 +2,11 @@
 
 本项目版本号遵循 semver。每个版本列出主要变更。
 
+## [0.8.3] - 2025-06-17
+
+### Fixed
+- 电源线 p3→p1 转场残留：pad 滑出时电源线跟随小人跳出，修复为 pad slideOut onDone 时 `setGlobalPowerLineVisible(false)`，enterPhase1 再显示
+
 ## [0.8.2] - 2025-06-17
 
 ### Added
