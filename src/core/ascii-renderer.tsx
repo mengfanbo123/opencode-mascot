@@ -1,6 +1,6 @@
 /** @jsxImportSource @opentui/solid */
 
-import { createSignal, onCleanup } from "solid-js";
+import { createSignal, createMemo, onCleanup } from "solid-js";
 import type { JSX } from "@opentui/solid";
 import type { MascotPack, MascotState, EffectTimerCtx, EffectRenderCtx, PropPack, PropPosition } from "./types";
 import { emitPropShow } from "./celebration-bus";
@@ -69,6 +69,7 @@ export function createAnimatedRenderer(pack: MascotPack): {
   getProp: () => PropPack | null;
   getSecondaryProp: () => PropPack | null;
   setExtra: (name: string, value: unknown) => void;
+  destroy: () => void;
 } {
   const anim = { ...DEFAULT_ANIM, ...pack.animations };
   const fg = pack.colors?.defaultFg || undefined;
@@ -246,7 +247,7 @@ export function createAnimatedRenderer(pack: MascotPack): {
   // 1. Blink
   const hasBlink = (pack.frames as Record<string, string[] | undefined>)["blink"] !== undefined;
 
-  setInterval(() => {
+  const blinkTimer = setInterval(() => {
     if (currentState() !== "sleeping" && Math.random() < anim.blinkChance && hasBlink) {
       setFrameOverride("blink");
       setTimeout(() => setFrameOverride(null), 150);
@@ -258,7 +259,7 @@ export function createAnimatedRenderer(pack: MascotPack): {
     (k) => k !== "default" && k !== "blink",
   );
 
-  setInterval(() => {
+  const expressionTimer = setInterval(() => {
     if (currentState() === "idle" && !frameOverride()) {
       const pick = availableExpressions[Math.floor(Math.random() * availableExpressions.length)];
       if (pick) {
@@ -269,7 +270,7 @@ export function createAnimatedRenderer(pack: MascotPack): {
   }, anim.expressionInterval);
 
   // 3. Breathing
-  setInterval(() => {
+  const breathTimer = setInterval(() => {
     if (currentState() === "idle") {
       setBreathPhase((v) => !v);
     }
@@ -278,6 +279,7 @@ export function createAnimatedRenderer(pack: MascotPack): {
   // 4. Walk
   let walkStep = -1;
   let walkInterval: ReturnType<typeof setInterval> | null = null;
+  let walkTimeout: ReturnType<typeof setTimeout> | null = null;
 
   const startWalk = () => {
     if (walkInterval || !walkEnabled()) return;
@@ -322,14 +324,15 @@ export function createAnimatedRenderer(pack: MascotPack): {
         }
       }
       if (currentState() !== "sleeping") {
-        scheduleNextWalk();
+        walkTimeout = scheduleNextWalk();
       }
     }, delay);
   }
 
-  scheduleNextWalk();
+  walkTimeout = scheduleNextWalk();
 
   // 5. Jump
+  let jumpTimeout: ReturnType<typeof setTimeout> | null = null;
   function scheduleNextJump() {
     const delay = anim.jumpMinDelay + Math.floor(Math.random() * (anim.jumpMaxDelay - anim.jumpMinDelay));
     return setTimeout(() => {
@@ -344,12 +347,12 @@ export function createAnimatedRenderer(pack: MascotPack): {
         }, 2000);
       }
       if (currentState() !== "sleeping") {
-        scheduleNextJump();
+        jumpTimeout = scheduleNextJump();
       }
     }, delay);
   }
 
-  scheduleNextJump();
+  jumpTimeout = scheduleNextJump();
 
   // ─── Pack-defined effect timers ───
   const effectTimers: ReturnType<typeof setInterval>[] = [];
@@ -360,6 +363,42 @@ export function createAnimatedRenderer(pack: MascotPack): {
   }
 
   resetIdleSleep();
+
+  // ─── Performance guardrail ───
+  // 监控element()执行耗时，>50ms时降级停flashTimer；连续3次<20ms恢复
+  // 性能优化必要注释：threshold非显然，降级策略影响用户体验需记录
+  let perfSlowStreak = 0;
+  let perfFastStreak = 0;
+  let perfDegraded = false;
+  const PERF_SLOW_MS = 50;
+  const PERF_FAST_MS = 20;
+
+  const perfGuardTimer = setInterval(() => {
+    const t0 = performance.now();
+    memoizedLines();
+    const elapsed = performance.now() - t0;
+    if (elapsed > PERF_SLOW_MS) {
+      perfSlowStreak++;
+      perfFastStreak = 0;
+      if (perfSlowStreak >= 2 && !perfDegraded && (currentState() === "busy" || currentState() === "thinking")) {
+        perfDegraded = true;
+        log("WARN", `perf degraded: render=${elapsed.toFixed(1)}ms, stopping flashTimer`);
+        stopFlash();
+      }
+    } else if (elapsed < PERF_FAST_MS) {
+      perfFastStreak++;
+      perfSlowStreak = 0;
+      if (perfFastStreak >= 5 && perfDegraded) {
+        perfDegraded = false;
+        log("INFO", `perf recovered: render=${elapsed.toFixed(1)}ms`);
+        if (currentState() === "thinking" || currentState() === "busy") {
+          flashTimer = setInterval(() => {
+            setFlashColor(FLASH_COLORS[Math.floor(Math.random() * FLASH_COLORS.length)]);
+          }, 250);
+        }
+      }
+    }
+  }, 1000);
 
   // ─── Cleanup ───
   onCleanup(() => {
@@ -372,36 +411,62 @@ export function createAnimatedRenderer(pack: MascotPack): {
     stopFall();
     stopBomb();
     stopSecondaryPropTimer();
+    stopPropTimer();
+    stopWalk();
     if (zzzTimer) { clearInterval(zzzTimer); zzzTimer = null; }
+    if (idleSleepTimeout) { clearTimeout(idleSleepTimeout); idleSleepTimeout = null; }
+    if (idlePadTimeout) { clearTimeout(idlePadTimeout); idlePadTimeout = null; }
+    if (idleBoxTimeout) { clearTimeout(idleBoxTimeout); idleBoxTimeout = null; }
+    if (blinkTimer) clearInterval(blinkTimer);
+    if (expressionTimer) clearInterval(expressionTimer);
+    if (breathTimer) clearInterval(breathTimer);
+    if (walkTimeout) clearTimeout(walkTimeout);
+    if (jumpTimeout) clearTimeout(jumpTimeout);
+    if (perfGuardTimer) clearInterval(perfGuardTimer);
+    for (const t of effectTimers) clearInterval(t);
   });
 
+  const destroy = () => {
+    stopFlash();
+    stopDragMsg();
+    stopBounce();
+    stopCelebrate();
+    stopVersion();
+    stopScatter();
+    stopFall();
+    stopBomb();
+    stopSecondaryPropTimer();
+    stopPropTimer();
+    stopWalk();
+    if (zzzTimer) { clearInterval(zzzTimer); zzzTimer = null; }
+    if (idleSleepTimeout) { clearTimeout(idleSleepTimeout); idleSleepTimeout = null; }
+    if (idlePadTimeout) { clearTimeout(idlePadTimeout); idlePadTimeout = null; }
+    if (idleBoxTimeout) { clearTimeout(idleBoxTimeout); idleBoxTimeout = null; }
+    if (blinkTimer) clearInterval(blinkTimer);
+    if (expressionTimer) clearInterval(expressionTimer);
+    if (breathTimer) clearInterval(breathTimer);
+    if (walkTimeout) clearTimeout(walkTimeout);
+    if (jumpTimeout) clearTimeout(jumpTimeout);
+    if (perfGuardTimer) clearInterval(perfGuardTimer);
+    for (const t of effectTimers) clearInterval(t);
+  };
+
   // ─── Render ───
-  const element = () => {
+  // B2+B3: memo化lines，flashColor不触发lines重建（只改fg属性）
+  const memoizedLines = createMemo(() => {
     breathPhase();
     walkOffset();
-    jumpOffset();
     frameOverride();
     currentState();
-    dragging();
-    celebrate();
-    flashColor();
-    dragMsg();
-    zzz();
-    scatter();
-    bomb();
-    versionMsg();
     characterHidden();
-    activeProp();
     propPosition();
-
+    scatter();
     for (const [, [get]] of extraSignals) {
       get();
     }
 
     const frameName = frameOverride() ?? STATE_TO_FRAME[currentState()] ?? "default";
     const rawLines = getFrameLines(pack, frameName);
-    const offset = walkOffset();
-
     const width = rawLines[0]?.length ?? 10;
     const blank = " ".repeat(width);
 
@@ -427,7 +492,20 @@ export function createAnimatedRenderer(pack: MascotPack): {
         };
       lines = effects.render(lines, renderCtx);
     }
+    return lines;
+  });
 
+  const element = () => {
+    // flashColor不再追踪——JSX fg属性绑定，solid fine-grained只更新DOM属性不重建节点
+    jumpOffset();
+    celebrate();
+    dragMsg();
+    zzz();
+    bomb();
+    versionMsg();
+
+    const lines = memoizedLines();
+    const offset = walkOffset();
     const top = jumpOffset();
     const left = offset > 0 ? offset : 0;
     const cel = celebrate();
@@ -454,7 +532,7 @@ export function createAnimatedRenderer(pack: MascotPack): {
     );
   };
 
-  const propElement = () => {
+  const propLines = createMemo(() => {
     activeProp();
     propFrameIdx();
     const prop = activeProp();
@@ -463,18 +541,23 @@ export function createAnimatedRenderer(pack: MascotPack): {
     const propFramesRaw = Array.isArray(prop.frames[0])
       ? (prop.frames as string[][])
       : [prop.frames as string[]];
-    const propLines = propFramesRaw[propFrameIdx() % propFramesRaw.length] ?? propFramesRaw[0];
+    return propFramesRaw[propFrameIdx() % propFramesRaw.length] ?? propFramesRaw[0];
+  });
+
+  const propElement = () => {
+    const propLinesData = propLines();
+    if (!propLinesData) return null;
 
     return (
       <box flexDirection="column" alignItems="flex-start">
-        {propLines.map((line: string) => (
+        {propLinesData.map((line: string) => (
           <text fg={fg}>{line}</text>
         ))}
       </box>
     );
   };
 
-  const secondaryPropElement = () => {
+  const secondaryPropLines = createMemo(() => {
     secondaryProp();
     secondaryPropFrameIdx();
     const prop = secondaryProp();
@@ -483,11 +566,16 @@ export function createAnimatedRenderer(pack: MascotPack): {
     const propFramesRaw = Array.isArray(prop.frames[0])
       ? (prop.frames as string[][])
       : [prop.frames as string[]];
-    const propLines = propFramesRaw[secondaryPropFrameIdx() % propFramesRaw.length] ?? propFramesRaw[0];
+    return propFramesRaw[secondaryPropFrameIdx() % propFramesRaw.length] ?? propFramesRaw[0];
+  });
+
+  const secondaryPropElement = () => {
+    const propLinesData = secondaryPropLines();
+    if (!propLinesData) return null;
 
     return (
       <box flexDirection="column" alignItems="flex-start">
-        {propLines.map((line: string) => (
+        {propLinesData.map((line: string) => (
           <text fg={fg}>{line}</text>
         ))}
       </box>
@@ -762,5 +850,5 @@ export function createAnimatedRenderer(pack: MascotPack): {
 
   const getProp = () => activeProp();
 
-  return { element, propElement, secondaryPropElement, getPropPosition: () => propPosition(), getCharacterHidden: () => characterHidden(), getState: currentState, setState, toggleWalk, setDragging, setCharacterHidden, celebrateUpdate, bounce, bounceSafe, showVersion, scatterIn, explode, fallApart, setProp, getProp, setSecondaryProp, getSecondaryProp, setExtra };
+  return { element, propElement, secondaryPropElement, getPropPosition: () => propPosition(), getCharacterHidden: () => characterHidden(), getState: currentState, setState, toggleWalk, setDragging, setCharacterHidden, celebrateUpdate, bounce, bounceSafe, showVersion, scatterIn, explode, fallApart, setProp, getProp, setSecondaryProp, getSecondaryProp, setExtra, destroy };
 }

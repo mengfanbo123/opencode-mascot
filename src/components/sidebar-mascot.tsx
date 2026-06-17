@@ -34,11 +34,6 @@ const PEEK = 2;
 const PEEK_INTERVAL = 1200;
 const EDGE_THRESHOLD = 3;
 
-// v0.8.4 紧急止血：Phase Machine 无限循环 + 16ms timer 风暴导致 opentui 渲染管线过载，
-// native 后端 abort（opencode.log 中 error=Aborted × 105 次）。
-// 设为 false 禁用 P1/P2/P3 无限循环，回归 v0.6.x 简单 busy 闪烁。根因修复见 v0.9.0 计划。
-const PHASE_MACHINE_ENABLED = false;
-
 let singletonRenderers: Record<string, ReturnType<typeof createAnimatedRenderer>> | null = null;
 let singletonListener = false;
 const [globalCurrentName, setGlobalCurrentName] = createSignal<string>("yueer");
@@ -135,6 +130,7 @@ let phaseTimer: ReturnType<typeof setTimeout> | null = null;
 let flyTimer: ReturnType<typeof setInterval> | null = null;
 let fallTimer: ReturnType<typeof setInterval> | null = null;
 let swayTimer: ReturnType<typeof setInterval> | null = null;
+let phaseCycleCompleted = false;
 
 const stopDive = () => {
   if (diveTimer) { clearInterval(diveTimer); diveTimer = null; }
@@ -236,6 +232,7 @@ const stopPhaseMachine = () => {
   setGlobalOnMachine(false);
   currentPhase = 0;
   globalJumping = false;
+  phaseCycleCompleted = false;
 };
 
 const stopFlyAnimation = () => {
@@ -345,7 +342,7 @@ const enterPhase1 = () => {
 const enterPhase2 = () => {
   currentPhase = 2;
   const sid = phaseSessionId;
-  log("DEBUG", `enterPhase${currentPhase} sid=${sid}`);
+  log("DEBUG", `enterPhase${currentPhase} sid=${sid} cycleCompleted=${phaseCycleCompleted}`);
   const r = singletonRenderers?.[globalCurrentName()];
   if (!r) return;
   const laptop = getProp("laptop");
@@ -354,7 +351,9 @@ const enterPhase2 = () => {
   setGlobalOnMachine(false);
   r.setCharacterHidden(false);
   startVibeCoding(sid);
-  phaseTimer = setTimeout(() => enterPhase3(), 60000);
+  if (!phaseCycleCompleted) {
+    phaseTimer = setTimeout(() => enterPhase3(), 60000);
+  }
 };
 
 const enterPhase3 = () => {
@@ -383,7 +382,8 @@ const enterPhase3 = () => {
           fallToWorkY();
           setTimeout(() => {
             if (sid !== phaseSessionId) return;
-            enterPhase1();
+            phaseCycleCompleted = true;
+            enterPhase2();
           }, 800);
         });
       }, 30000);
@@ -392,7 +392,6 @@ const enterPhase3 = () => {
 };
 
 const startPhaseMachine = () => {
-  if (!PHASE_MACHINE_ENABLED) return;
   if (currentPhase > 0) return;
   enterPhase1();
 };
@@ -443,6 +442,16 @@ export function SidebarMascot(props: SidebarMascotProps): JSX.Element {
   };
 
   onCleanup(() => { stopPeek(); stopReturn(); });
+  onCleanup(() => {
+    stopPhaseMachine();
+    if (singletonRenderers) {
+      for (const name of Object.keys(singletonRenderers)) {
+        singletonRenderers[name].destroy();
+      }
+      singletonRenderers = null;
+    }
+    singletonListener = false;
+  });
 
   const switchToNext = () => {
     const cur = currentName();
