@@ -2,6 +2,35 @@
 
 本项目版本号遵循 semver。每个版本列出主要变更。
 
+## [0.9.1] - 2026-06-17
+
+### Fixed
+- **P1 listener 泄漏**：sidebar 组件 unmount（hot reload/TUI重挂载）后，8 个 event listener（session.status/session.idle/mascot.switch/mascot.toggleWalk + onCelebrate/onVersion/onScatter/onPropShow）仍挂在 event bus，新组件 mount 时重复累积，旧闭包操作已 destroy 的 renderer 导致 timer 永久泄漏。修复：接口 `api.event.on` 返回 unsubscribe 函数，所有 listener push 到 `singletonUnsubs` 数组，onCleanup 遍历调用
+- **P1 perf 降级被 setState 绕过**：perf guardrail 降级 → stopFlash → opencode 重发 session.status（busy/retry 频繁）→ setState("busy") 无视 perfDegraded 直接重建 flashTimer → 降级失效。修复：setState 创建 flashTimer 前检查 `if (!perfDegraded)`
+- **P1 effects.render 偷读 jumpOffset 破坏 memo**（最严重）：memoizedLines 声称不追踪 jumpOffset，但 `if (effects?.render)` 块内构造 renderCtx 时调用了 `jumpOffset()` 和 `dragging()`，yueer/baozi/cat 三个内置角色全部定义了 effects.render。跳跃时 setJumpOffset 三连击触发 memo 重算 → lines.map 全量重建所有 Text 节点，memo 的「省 lines 重算」价值在跳跃期间失效。修复：从 EffectRenderCtx 类型移除 jumpOffset 字段（位移由 `<box top>` 承担），yueer render 删除 jumpOffset 分支，dragging 保留并显式加入 memo 追踪列表
+- **P2 perf recover 未 stopFlash**：性能恢复重建 flashTimer 前未先 stopFlash，边缘场景 timer 泄漏。修复：recover 时先 stopFlash 再重建
+- **P2 enterPhase1 globalJumping 残留**：两个 early return（renderer null + prop null）未恢复 globalJumping=false 和 currentPhase=0，导致后续 busy 触发 Phase Machine 时 `if (globalJumping) return` 直接退出。修复：return 前恢复状态
+
+## [0.9.0] - 2026-06-17
+
+### Changed
+- **Phase Machine 改有限状态机**：原 P1→P2→P3→P1 无限循环导致渲染管线过载（native abort × 105 次），改为 P1→P2→P3→回 P2 停住直到 idle。加 `phaseCycleCompleted` 标志，P2 判断是否进 P3，长任务稳定停在 P2 vibe coding，视觉无感知
+- **ASCII 行 createMemo 化**：element()/propElement()/secondaryPropElement 的 lines 计算抽到 createMemo，frame 不变时不重建 text 节点树
+- **flashColor 解耦**：flashColor 从 element() 追踪列表移除，solid fine-grained 响应式下 `<text fg={flashColor() ?? fg}>` 编译为 getter，flashColor 变化只更新 DOM fg 属性不重建节点
+- **单例 timer 全清 destroy() API**：blink/expression/breath/walk/jump/effectTimers/idleSleep/idlePad/idleBox 全部存引用，新增 destroy() 方法彻底清理，onCleanup 扩展 + sidebar 组件卸载时调用 destroy + stopPhaseMachine，修复单例设计 timer 泄漏（跨会话累积）
+
+### Added
+- **性能护栏**：监控 memoizedLines() 执行耗时，>50ms 连续 2 次自动降级（停 flashTimer），<20ms 连续 5 次自动恢复，日志记录降级/恢复事件
+
+## [0.8.4] - 2026-06-17
+
+### Fixed
+- **紧急止血 TUI 卡死**：v0.8.0+ 引入 Phase Machine 无限循环 + 16ms timer 风暴 + flashColor 120ms 高频重建，导致 opentui 渲染管线过载，native 后端 abort（opencode.log 中 error=Aborted × 105 次）
+  - Phase Machine 全局开关 `PHASE_MACHINE_ENABLED=false` 禁用无限循环（回退 v0.6.x 简单 busy 闪烁）
+  - flashColor 降频 120ms → 250ms
+  - stopPhaseMachine 补全清理 busyPacingTimer + globalFallTimer（原遗漏导致 timer 泄漏）
+  - 16ms interval → 50ms（startFlySequence/startDiveSequence/startPadSlideOut/fallToWorkY 四处）
+
 ## [0.8.3] - 2025-06-17
 
 ### Fixed
