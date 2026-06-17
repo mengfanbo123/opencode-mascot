@@ -443,13 +443,6 @@ export function SidebarMascot(props: SidebarMascotProps): JSX.Element {
   };
 
   onCleanup(() => { stopPeek(); stopReturn(); });
-  onCleanup(() => {
-    for (const unsub of singletonUnsubs) {
-      try { unsub(); } catch (e) { /* ignore */ }
-    }
-    singletonUnsubs = [];
-    singletonListener = false;
-  });
 
   const switchToNext = () => {
     const cur = currentName();

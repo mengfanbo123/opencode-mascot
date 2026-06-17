@@ -340,6 +340,7 @@ export function createAnimatedRenderer(pack: MascotPack): {
         setJumpOffset(-2);
         setTimeout(() => setJumpOffset(-1), 1500);
         setTimeout(() => {
+          if (currentState() !== "idle") { setJumpOffset(0); return; }
           setJumpOffset(0);
           if (Math.random() < 0.4) {
             fallApart();
@@ -365,24 +366,26 @@ export function createAnimatedRenderer(pack: MascotPack): {
   resetIdleSleep();
 
   // ─── Performance guardrail ───
-  // 监控element()执行耗时，>50ms时降级停flashTimer；连续3次<20ms恢复
+  // 监控memoizedLines执行耗时，>100ms连续3次降级停flashTimer；连续5次<30ms恢复
   // 性能优化必要注释：threshold非显然，降级策略影响用户体验需记录
   let perfSlowStreak = 0;
   let perfFastStreak = 0;
   let perfDegraded = false;
-  const PERF_SLOW_MS = 50;
-  const PERF_FAST_MS = 20;
+  const PERF_SLOW_MS = 100;
+  const PERF_FAST_MS = 30;
+  const perfStart = Date.now();
 
   const perfGuardTimer = setInterval(() => {
-    const t0 = performance.now();
+    if (Date.now() - perfStart < 5000) return; // 5s warmup
+    const t0 = Date.now();
     memoizedLines();
-    const elapsed = performance.now() - t0;
+    const elapsed = Date.now() - t0;
     if (elapsed > PERF_SLOW_MS) {
       perfSlowStreak++;
       perfFastStreak = 0;
-      if (perfSlowStreak >= 2 && !perfDegraded && (currentState() === "busy" || currentState() === "thinking")) {
+      if (perfSlowStreak >= 3 && !perfDegraded && (currentState() === "busy" || currentState() === "thinking")) {
         perfDegraded = true;
-        log("WARN", `perf degraded: render=${elapsed.toFixed(1)}ms, stopping flashTimer`);
+        log("WARN", `perf degraded: render=${elapsed}ms, stopping flashTimer`);
         stopFlash();
       }
     } else if (elapsed < PERF_FAST_MS) {
@@ -390,7 +393,7 @@ export function createAnimatedRenderer(pack: MascotPack): {
       perfSlowStreak = 0;
       if (perfFastStreak >= 5 && perfDegraded) {
         perfDegraded = false;
-        log("INFO", `perf recovered: render=${elapsed.toFixed(1)}ms`);
+        log("INFO", `perf recovered: render=${elapsed}ms`);
         if (currentState() === "thinking" || currentState() === "busy") {
           stopFlash();
           flashTimer = setInterval(() => {
@@ -488,6 +491,7 @@ export function createAnimatedRenderer(pack: MascotPack): {
           state: currentState(),
           frameName,
           breathPhase: breathPhase(),
+          jumpOffset: jumpOffset(),
           dragging: dragging(),
           get: getExtra,
         };
@@ -695,7 +699,7 @@ export function createAnimatedRenderer(pack: MascotPack): {
     bounceTimers.push(setTimeout(() => {
       setJumpOffset(0);
       bounceTimers = [];
-      if (Math.random() < 0.5) {
+      if (currentState() === "idle" && Math.random() < 0.5) {
         fallApart();
       }
     }, 450));
