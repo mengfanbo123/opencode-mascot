@@ -231,6 +231,12 @@ const stopPhaseMachine = () => {
   setGlobalPowerLineVisible(false);
   setGlobalFlyOffset(0);
   setGlobalOnMachine(false);
+  const r = singletonRenderers?.[globalCurrentName()];
+  if (r) {
+    r.setProp(null);
+    r.setSecondaryProp(null);
+    r.setCharacterHidden(false);
+  }
   currentPhase = 0;
   globalJumping = false;
   phaseCycleCompleted = false;
@@ -346,8 +352,11 @@ const enterPhase2 = () => {
   log("DEBUG", `enterPhase${currentPhase} sid=${sid} cycleCompleted=${phaseCycleCompleted}`);
   const r = singletonRenderers?.[globalCurrentName()];
   if (!r) return;
+  const pcCase = getProp("pc-case");
+  if (!pcCase) return;
   const laptop = getProp("laptop");
-  if (!laptop) return;
+  r.setProp(pcCase);
+  if (laptop) r.setSecondaryProp(laptop);
   log("DEBUG", `enterPhase2: mainProp=${r.getProp()?.name}, propPos=${r.getPropPosition()}`);
   setGlobalOnMachine(false);
   r.setCharacterHidden(false);
