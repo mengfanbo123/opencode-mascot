@@ -13,7 +13,7 @@ interface SidebarMascotProps {
   initialMascot?: string;
   api: {
     event: {
-      on(event: string, callback: (data: unknown) => void): void;
+      on(event: string, callback: (data: unknown) => void): () => void;
     };
     renderer: {
       clearSelection(): void;
@@ -36,6 +36,7 @@ const EDGE_THRESHOLD = 3;
 
 let singletonRenderers: Record<string, ReturnType<typeof createAnimatedRenderer>> | null = null;
 let singletonListener = false;
+let singletonUnsubs: (() => void)[] = [];
 const [globalCurrentName, setGlobalCurrentName] = createSignal<string>("yueer");
 const [globalUserOverride, setGlobalUserOverride] = createSignal(false);
 const [globalPosX, setGlobalPosX] = createSignal(20);
@@ -302,11 +303,11 @@ const enterPhase1 = () => {
   setGlobalPosY(30);
   log("DEBUG", `enterPhase${currentPhase} sid=${sid}`);
   const r = singletonRenderers?.[globalCurrentName()];
-  if (!r) return;
+  if (!r) { currentPhase = 0; return; }
   stopBusyPacing();
   globalJumping = true;
   const pcCase = getProp("pc-case");
-  if (!pcCase) return;
+  if (!pcCase) { globalJumping = false; currentPhase = 0; return; }
   r.setProp(pcCase);
   r.setSecondaryProp(null);
   r.setCharacterHidden(false);
@@ -444,6 +445,10 @@ export function SidebarMascot(props: SidebarMascotProps): JSX.Element {
   onCleanup(() => { stopPeek(); stopReturn(); });
   onCleanup(() => {
     stopPhaseMachine();
+    for (const unsub of singletonUnsubs) {
+      try { unsub(); } catch (e) { /* ignore */ }
+    }
+    singletonUnsubs = [];
     if (singletonRenderers) {
       for (const name of Object.keys(singletonRenderers)) {
         singletonRenderers[name].destroy();
@@ -548,7 +553,7 @@ export function SidebarMascot(props: SidebarMascotProps): JSX.Element {
   if (!singletonListener) {
     singletonListener = true;
 
-    props.api.event.on("session.status", (data: unknown) => {
+    singletonUnsubs.push(props.api.event.on("session.status", (data: unknown) => {
       const payload = data as { type?: string; properties?: { sessionID?: string; status?: { type?: string } } } | null;
       const statusType = payload?.properties?.status?.type;
       log("DEBUG", `session.status: statusType=${statusType}`);
@@ -583,16 +588,16 @@ export function SidebarMascot(props: SidebarMascotProps): JSX.Element {
         renderers[globalCurrentName()].setProp(null);
         renderers[globalCurrentName()].setCharacterHidden(false);
       }
-    });
+    }));
 
-    props.api.event.on("session.idle", () => {
+    singletonUnsubs.push(props.api.event.on("session.idle", () => {
       renderers[globalCurrentName()].setState("happy");
       setTimeout(() => {
         renderers[globalCurrentName()].setState("idle");
       }, 3000);
-    });
+    }));
 
-    props.api.event.on("mascot.switch", (data: unknown) => {
+    singletonUnsubs.push(props.api.event.on("mascot.switch", (data: unknown) => {
       const target = data as { name?: string } | null;
       if (target?.name) {
         const name = target.name;
@@ -607,33 +612,33 @@ export function SidebarMascot(props: SidebarMascotProps): JSX.Element {
         setGlobalCurrentName(allNames[(idx + 1) % allNames.length]);
         setGlobalUserOverride(true);
       }
-    });
+    }));
 
-    props.api.event.on("mascot.toggleWalk", () => {
+    singletonUnsubs.push(props.api.event.on("mascot.toggleWalk", () => {
       renderers[globalCurrentName()].toggleWalk();
-    });
+    }));
 
-    onCelebrate((newVersion) => {
+    singletonUnsubs.push(onCelebrate((newVersion) => {
       setGlobalZBoost(true);
       renderers[globalCurrentName()].celebrateUpdate(newVersion);
       setTimeout(() => setGlobalZBoost(false), 2000);
-    });
+    }));
 
-    onVersion((version) => {
+    singletonUnsubs.push(onVersion((version) => {
       setGlobalZBoost(true);
       renderers[globalCurrentName()].showVersion(version);
       setTimeout(() => setGlobalZBoost(false), 3500);
-    });
+    }));
 
-    onScatter(() => {
+    singletonUnsubs.push(onScatter(() => {
       if (globalScattered) return;
       globalScattered = true;
       renderers[globalCurrentName()].scatterIn();
-    });
+    }));
 
-    onPropShow(() => {
+    singletonUnsubs.push(onPropShow(() => {
       fallToWorkY();
-    });
+    }));
 
     globalScattered = true;
     renderers[globalCurrentName()].scatterIn();

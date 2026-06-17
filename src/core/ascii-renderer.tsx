@@ -392,6 +392,7 @@ export function createAnimatedRenderer(pack: MascotPack): {
         perfDegraded = false;
         log("INFO", `perf recovered: render=${elapsed.toFixed(1)}ms`);
         if (currentState() === "thinking" || currentState() === "busy") {
+          stopFlash();
           flashTimer = setInterval(() => {
             setFlashColor(FLASH_COLORS[Math.floor(Math.random() * FLASH_COLORS.length)]);
           }, 250);
@@ -461,6 +462,7 @@ export function createAnimatedRenderer(pack: MascotPack): {
     characterHidden();
     propPosition();
     scatter();
+    dragging();
     for (const [, [get]] of extraSignals) {
       get();
     }
@@ -486,7 +488,6 @@ export function createAnimatedRenderer(pack: MascotPack): {
           state: currentState(),
           frameName,
           breathPhase: breathPhase(),
-          jumpOffset: jumpOffset(),
           dragging: dragging(),
           get: getExtra,
         };
@@ -598,9 +599,11 @@ export function createAnimatedRenderer(pack: MascotPack): {
     if (s === "thinking" || s === "busy") {
       stopFlash();
       setZzz(null);
-      flashTimer = setInterval(() => {
-        setFlashColor(FLASH_COLORS[Math.floor(Math.random() * FLASH_COLORS.length)]);
-      }, 250);
+      if (!perfDegraded) {
+        flashTimer = setInterval(() => {
+          setFlashColor(FLASH_COLORS[Math.floor(Math.random() * FLASH_COLORS.length)]);
+        }, 250);
+      }
     } else {
       stopFlash();
     }
