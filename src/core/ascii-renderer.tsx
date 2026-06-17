@@ -512,7 +512,7 @@ export function createAnimatedRenderer(pack: MascotPack): {
       setZzz(null);
       flashTimer = setInterval(() => {
         setFlashColor(FLASH_COLORS[Math.floor(Math.random() * FLASH_COLORS.length)]);
-      }, 120);
+      }, 250);
     } else {
       stopFlash();
     }

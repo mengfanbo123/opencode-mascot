@@ -34,6 +34,11 @@ const PEEK = 2;
 const PEEK_INTERVAL = 1200;
 const EDGE_THRESHOLD = 3;
 
+// v0.8.4 紧急止血：Phase Machine 无限循环 + 16ms timer 风暴导致 opentui 渲染管线过载，
+// native 后端 abort（opencode.log 中 error=Aborted × 105 次）。
+// 设为 false 禁用 P1/P2/P3 无限循环，回归 v0.6.x 简单 busy 闪烁。根因修复见 v0.9.0 计划。
+const PHASE_MACHINE_ENABLED = false;
+
 let singletonRenderers: Record<string, ReturnType<typeof createAnimatedRenderer>> | null = null;
 let singletonListener = false;
 const [globalCurrentName, setGlobalCurrentName] = createSignal<string>("yueer");
@@ -83,7 +88,7 @@ const fallToWorkY = () => {
     if (t >= 1) {
       if (globalFallTimer) { clearInterval(globalFallTimer); globalFallTimer = null; }
     }
-  }, 16);
+  }, 50);
 };
 
 let busyPacingTimer: ReturnType<typeof setInterval> | null = null;
@@ -213,7 +218,7 @@ const startPadSlideOut = (sid: number, onDone: () => void) => {
       stopPadSlide();
       onDone();
     }
-  }, 16);
+  }, 50);
 };
 
 const stopPhaseMachine = () => {
@@ -223,6 +228,8 @@ const stopPhaseMachine = () => {
   stopDive();
   stopPadSlide();
   stopVibe();
+  stopBusyPacing();
+  if (globalFallTimer) { clearInterval(globalFallTimer); globalFallTimer = null; }
   setGlobalRopeVisible(false);
   setGlobalPowerLineVisible(false);
   setGlobalFlyOffset(0);
@@ -268,10 +275,10 @@ const startFlySequence = (sid: number, onFallStart: () => void, onComplete: () =
             if (swayTimer) { clearInterval(swayTimer); swayTimer = null; }
             onComplete();
           }
-        }, 16);
+        }, 50);
       }, 1000);
     }
-  }, 16);
+  }, 50);
 };
 
 const startDiveSequence = (sid: number, onDone: () => void) => {
@@ -288,7 +295,7 @@ const startDiveSequence = (sid: number, onDone: () => void) => {
       stopDive();
       onDone();
     }
-  }, 16);
+  }, 50);
 };
 
 const enterPhase1 = () => {
@@ -385,6 +392,7 @@ const enterPhase3 = () => {
 };
 
 const startPhaseMachine = () => {
+  if (!PHASE_MACHINE_ENABLED) return;
   if (currentPhase > 0) return;
   enterPhase1();
 };
