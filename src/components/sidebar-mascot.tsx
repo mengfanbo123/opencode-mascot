@@ -444,17 +444,10 @@ export function SidebarMascot(props: SidebarMascotProps): JSX.Element {
 
   onCleanup(() => { stopPeek(); stopReturn(); });
   onCleanup(() => {
-    stopPhaseMachine();
     for (const unsub of singletonUnsubs) {
       try { unsub(); } catch (e) { /* ignore */ }
     }
     singletonUnsubs = [];
-    if (singletonRenderers) {
-      for (const name of Object.keys(singletonRenderers)) {
-        singletonRenderers[name].destroy();
-      }
-      singletonRenderers = null;
-    }
     singletonListener = false;
   });
 
