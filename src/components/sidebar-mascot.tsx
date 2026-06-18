@@ -723,9 +723,14 @@ export function SidebarMascot(props: SidebarMascotProps): JSX.Element {
     setCurrentName(nextName);
     setUserOverride(true);
 
-    // 强制 sidebar_content 重挂：createMemo/IIFE 在 opentui solid 不可靠
-    // 切形象后 propElement 不重算 → 机箱/显示器不显示
-    // forceSidebarRebuild 自增 → sidebar_content dispose+recreate → 渲染层读新 currentName
+    // 电源线同步闪：forceSidebarRebuild dispose 重建时机箱/显示器闪，
+    // 电源线需同步消失再显示，否则空档期视觉不一致
+    const wasPowerLine = globalPowerLineVisible();
+    if (wasPowerLine) {
+      setGlobalPowerLineVisible(false);
+      trackTimeout(() => setGlobalPowerLineVisible(true), 300);
+    }
+
     setForceSidebarRebuild(forceSidebarRebuild() + 1);
 
     log("DEBUG", `switchToNext done: newProp=${newRenderer.getProp()?.name} newSec=${newRenderer.getSecondaryProp()?.name} newHidden=${newRenderer.getCharacterHidden()}`);
