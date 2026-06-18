@@ -465,10 +465,15 @@ const startBlackoutSequence = (sid: number) => {
           r.setProp(null);
           r.setSecondaryProp(null);
           r.setState("scared");
+          trackTimeout(() => {
+            if (sid !== phaseSessionId) return;
+            const rr = singletonRenderers?.[globalCurrentName()];
+            if (rr) rr.setState("busy");
+          }, 3000);
         }
         currentPhase = 0;
         phaseMode = "none";
-        log("DEBUG", `blackout complete sid=${sid}, machine stopped, mascot scared`);
+        log("DEBUG", `blackout complete sid=${sid}, mascot scared, resume busy in 3s`);
       }, 1200);
       return;
     }
