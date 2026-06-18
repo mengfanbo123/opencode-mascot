@@ -605,28 +605,30 @@ export function SidebarMascot(props: SidebarMascotProps): JSX.Element {
     const idx = names.indexOf(cur);
     const nextName = names[(idx + 1) % names.length];
 
+    const inPhase = currentPhase > 0;
+    if (inPhase) {
+      stopPhaseMachine();
+    }
+
     const oldRenderer = renderers[cur];
     const newRenderer = renderers[nextName];
     const oldState = oldRenderer.getState();
-    const oldProp = oldRenderer.getProp();
-    const oldSecondaryProp = oldRenderer.getSecondaryProp();
-    const oldHidden = oldRenderer.getCharacterHidden();
 
     oldRenderer.setProp(null);
     oldRenderer.setSecondaryProp(null);
     oldRenderer.setCharacterHidden(false);
 
     newRenderer.setState(oldState);
-    if (oldProp) {
-      newRenderer.setProp(oldProp);
-    }
-    if (oldSecondaryProp) {
-      newRenderer.setSecondaryProp(oldSecondaryProp);
-    }
-    newRenderer.setCharacterHidden(oldHidden);
+    newRenderer.setProp(null);
+    newRenderer.setSecondaryProp(null);
+    newRenderer.setCharacterHidden(false);
 
     setCurrentName(nextName);
     setUserOverride(true);
+
+    if (inPhase && phaseMachineOn()) {
+      trackTimeout(() => triggerEasterEgg(), 1200);
+    }
   };
 
   const getCw = () => containerWidth() || 30;
