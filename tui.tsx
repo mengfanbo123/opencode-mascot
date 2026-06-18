@@ -52,16 +52,19 @@ const tui: TuiPlugin = async (api, _options) => {
     order: 160,
     slots: {
       sidebar_content() {
-        if (!cachedSidebarEl()) {
-          setCachedSidebarEl(createRoot((dispose) => {
-            cachedSidebarDispose = dispose;
-            return <SidebarMascot mascots={mascots} api={api} />;
-          }));
+        // 每次调用都 dispose 旧 root + recreate 新 root：
+        // - 解决 home→work 跳转时 cached native 节点孤儿问题（旧 container 已销毁）
+        // - dispose 真正清理 native 节点 + reactive scope，避免 mount 风暴累积
+        // - singletonRenderers 模块级保留，renderer 状态不丢
+        log("DEBUG", `sidebar_content called, hasDispose=${!!cachedSidebarDispose}, wasCached=${!!cachedSidebarEl()}`);
+        if (cachedSidebarDispose) {
+          cachedSidebarDispose();
+          cachedSidebarDispose = null;
         }
-        // Show 在 createRoot 外控制显隐：toggle off 立刻隐藏，on 立刻显示
-        // createRoot 内 SidebarMascot 保留（堵 mount 风暴），Show 只切可见性
-        // cachedSidebarEl 必须 signal 化：toggle on dispose+recreate 后
-        //   Show 内引用才能响应变化（普通变量不触发更新）
+        setCachedSidebarEl(createRoot((dispose) => {
+          cachedSidebarDispose = dispose;
+          return <SidebarMascot mascots={mascots} api={api} />;
+        }));
         return (
           <Show when={mascotVisible()} fallback={<></>}>
             {cachedSidebarEl()}
