@@ -5,7 +5,7 @@ import { join, dirname } from "node:path"
 import { fileURLToPath } from "node:url"
 import { createRoot, createSignal, Show, type JSX } from "solid-js"
 import { loadAllMascots } from "./src/core/mascot-loader"
-import { SidebarMascot, stopPhaseMachine, hideMascotPosition, showMascotPosition, resetLastBusySessionId, triggerEasterIfBusy, resumeBusyState, resetSingletonRenderers } from "./src/components/sidebar-mascot"
+import { SidebarMascot, stopPhaseMachine, hideMascotPosition, showMascotPosition, resetLastBusySessionId, triggerEasterIfBusy, resumeBusyState } from "./src/components/sidebar-mascot"
 import { HomeMascot, hideHomeMascotPosition } from "./src/components/home-mascot"
 import { checkAndUpdate } from "./src/core/updater"
 import { emitCelebrate, emitVersion, emitScatter } from "./src/core/celebration-bus"
@@ -93,19 +93,14 @@ const tui: TuiPlugin = async (api, _options) => {
             hideHomeMascotPosition();
             log("INFO", "mascot.toggle OFF: phase stopped, position moved offscreen");
           } else {
-            // 顺序关键：reset 先于 dispose
-            // - resetSingletonRenderers 先 destroy 旧 renderer + singletonRenderers=null
-            // - disposeCachedSidebar 后 setCachedSidebarEl(null) 触发 sidebar_content
-            // - sidebar_content 建 root1，root1 的 SidebarMascot 因 singletonRenderers=null 建全新 renderer
-            // 若顺序反：sidebar_content 抢先建 root1 复用旧 renderer，reset 后 destroy 旧 renderer → root1 持废引用
-            // showMascotPosition 恢复 posX/Y（toggle off 时 hideMascotPosition 设 -1000）
-            resetSingletonRenderers();
-            disposeCachedSidebar();
+            // 纯 Show 切换：不 dispose/recreate createRoot，避开 reactive 竞争
+            // cachedSidebarEl 是 signal，Show 响应 mascotVisible 切显隐
+            // createRoot 缓存不动 → renderer 不动 → native 节点不孤儿
             setMascotVisible(true);
             setPhaseMachineOn(true);
             showMascotPosition();
             resumeBusyState();
-            log("INFO", "mascot.toggle ON: reset renderers + disposed cache, sidebar_content will recreate");
+            log("INFO", "mascot.toggle ON: show via signal, cache untouched");
           }
           api.ui.toast({ message: `Mascot ${next ? "ON" : "OFF"}` });
         }
