@@ -47,6 +47,7 @@ const [globalZBoost, setGlobalZBoost] = createSignal(false);
 const [globalOnMachine, setGlobalOnMachine] = createSignal(false);
 const [globalRopeVisible, setGlobalRopeVisible] = createSignal(false);
 const [globalPowerLineVisible, setGlobalPowerLineVisible] = createSignal(false);
+const [globalSparkVisible, setGlobalSparkVisible] = createSignal(false);
 const [globalFlyOffset, setGlobalFlyOffset] = createSignal(0);
 const [globalDiving, setGlobalDiving] = createSignal(false);
 const [globalPadVisible, setGlobalPadVisible] = createSignal(false);
@@ -127,6 +128,7 @@ const stopBusyPacing = () => {
 };
 
 let currentPhase: 0 | 1 | 2 | 3 = 0;
+let phaseMode: "p1p2" | "p3" | "bomb" | "none" = "none";
 let phaseSessionId = 0;
 let phaseTimer: ReturnType<typeof setTimeout> | null = null;
 let flyTimer: ReturnType<typeof setInterval> | null = null;
@@ -249,6 +251,7 @@ const stopPhaseMachine = () => {
   if (globalFallTimer) { clearInterval(globalFallTimer); globalFallTimer = null; }
   setGlobalRopeVisible(false);
   setGlobalPowerLineVisible(false);
+  setGlobalSparkVisible(false);
   setGlobalFlyOffset(0);
   setGlobalOnMachine(false);
   const r = singletonRenderers?.[globalCurrentName()];
@@ -258,6 +261,7 @@ const stopPhaseMachine = () => {
     r.setCharacterHidden(false);
   }
   currentPhase = 0;
+  phaseMode = "none";
   globalJumping = false;
 };
 
@@ -382,7 +386,10 @@ const enterPhase2 = () => {
   setGlobalOnMachine(false);
   r.setCharacterHidden(false);
   startVibeCoding(sid);
-  phaseTimer = trackTimeout(() => enterPhase3(), 45000);
+  phaseTimer = trackTimeout(() => {
+    if (sid !== phaseSessionId) return;
+    startBlackoutSequence(sid);
+  }, 45000);
 };
 
 const enterPhase3 = () => {
@@ -411,7 +418,7 @@ const enterPhase3 = () => {
           fallToWorkY();
           trackTimeout(() => {
             if (sid !== phaseSessionId) return;
-            enterPhase1();
+            startBlackoutSequence(sid);
           }, 800);
         });
       }, 30000);
@@ -419,9 +426,82 @@ const enterPhase3 = () => {
   }, 800);
 };
 
-const startPhaseMachine = () => {
+const startBlackoutSequence = (sid: number) => {
+  log("DEBUG", `blackout start sid=${sid} mode=${phaseMode}`);
+  stopBusyPacing();
+  stopVibe();
+  const flickerCount = 3 + Math.floor(Math.random() * 3); // 3-5 flickers
+  let flicker = 0;
+  const doFlicker = () => {
+    if (sid !== phaseSessionId) return;
+    if (flicker >= flickerCount) {
+      // stage 2: sparks
+      setGlobalPowerLineVisible(true);
+      setGlobalSparkVisible(true);
+      log("DEBUG", `blackout sparks sid=${sid}`);
+      trackTimeout(() => {
+        if (sid !== phaseSessionId) return;
+        // stage 3: full blackout, machine stopped
+        setGlobalSparkVisible(false);
+        setGlobalPowerLineVisible(false);
+        setGlobalVibeVisible(false);
+        setGlobalRopeVisible(false);
+        setGlobalFlyOffset(0);
+        setGlobalOnMachine(false);
+        const r = singletonRenderers?.[globalCurrentName()];
+        if (r) {
+          r.setProp(null);
+          r.setSecondaryProp(null);
+          r.setCharacterHidden(true);
+        }
+        currentPhase = 0;
+        phaseMode = "none";
+        log("DEBUG", `blackout complete sid=${sid}, machine stopped`);
+      }, 200);
+      return;
+    }
+    flicker++;
+    setGlobalPowerLineVisible(flicker % 2 === 1);
+    trackTimeout(doFlicker, 100 + Math.floor(Math.random() * 50));
+  };
+  doFlicker();
+};
+
+const triggerEasterEgg = () => {
   if (currentPhase > 0) return;
-  enterPhase1();
+  if (!phaseMachineOn()) {
+    phaseMode = "none";
+    startBusyPacing();
+    return;
+  }
+  const rnd = Math.random();
+  log("DEBUG", `easter egg roll rnd=${rnd.toFixed(3)}`);
+  if (rnd < 0.25) {
+    // P1+P2 连贯：梯子爬完→显示器掉落→罚站 vibe，不可拆
+    phaseMode = "p1p2";
+    enterPhase1();
+  } else if (rnd < 0.45) {
+    // P3 单独：pad peek
+    phaseMode = "p3";
+    const r = singletonRenderers?.[globalCurrentName()];
+    if (!r) { phaseMode = "none"; return; }
+    r.setProp(null);
+    r.setSecondaryProp(null);
+    r.setCharacterHidden(false);
+    setGlobalOnMachine(false);
+    enterPhase3();
+  } else if (rnd < 0.55) {
+    // 炸弹 scatter
+    phaseMode = "bomb";
+    singletonRenderers?.[globalCurrentName()]?.scatterIn();
+    trackTimeout(() => {
+      if (phaseMode === "bomb") { phaseMode = "none"; startBusyPacing(); }
+    }, 1500);
+  } else {
+    // 无彩蛋：纯 busy
+    phaseMode = "none";
+    startBusyPacing();
+  }
 };
 
 export function SidebarMascot(props: SidebarMascotProps): JSX.Element {
@@ -606,7 +686,9 @@ export function SidebarMascot(props: SidebarMascotProps): JSX.Element {
           setGlobalOnMachine(false);
           fallToWorkY();
           if (phaseMachineOn()) {
-            trackTimeout(() => startPhaseMachine(), 1200);
+            trackTimeout(() => triggerEasterEgg(), 1200);
+          } else {
+            startBusyPacing();
           }
         }
       } else {
@@ -753,6 +835,11 @@ export function SidebarMascot(props: SidebarMascotProps): JSX.Element {
       {globalPowerLineVisible() ? (
         <box position="absolute" left={posX() + propOffset() + 10} top={posY() + 4} zIndex={49}>
           <text fg="#888888">{"━".repeat(80)}</text>
+        </box>
+      ) : null}
+      {globalSparkVisible() ? (
+        <box position="absolute" left={posX() + propOffset() + 10} top={posY() + 3} zIndex={51}>
+          <text fg="#FFFF00">⚡💥⚡</text>
         </box>
       ) : null}
       {renderers[currentName()]?.secondaryPropElement() ? (
