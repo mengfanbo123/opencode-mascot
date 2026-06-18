@@ -68,6 +68,16 @@ export const triggerEasterIfBusy = () => {
     trackTimeout(() => triggerEasterEgg(), 1200);
   }
 };
+
+export const resumeBusyState = () => {
+  if (lastBusySessionId !== null) {
+    const r = singletonRenderers?.[globalCurrentName()];
+    if (r) {
+      r.setState("busy");
+      startBusyPacing();
+    }
+  }
+};
 let globalScattered = false;
 let globalLastUserY: number | null = null;
 let globalLastUserX: number | null = null;
