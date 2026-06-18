@@ -572,6 +572,7 @@ export function createAnimatedRenderer(pack: MascotPack): {
     activeProp();
     propFrameIdx();
     const prop = activeProp();
+    log("DEBUG", `propElement called packName=${pack.name} prop=${prop?.name ?? 'null'}`);
     if (!prop) return null;
 
     const propFramesRaw = Array.isArray(prop.frames[0])
@@ -592,6 +593,7 @@ export function createAnimatedRenderer(pack: MascotPack): {
     secondaryProp();
     secondaryPropFrameIdx();
     const prop = secondaryProp();
+    log("DEBUG", `secondaryPropElement called packName=${pack.name} prop=${prop?.name ?? 'null'}`);
     if (!prop) return null;
 
     const propFramesRaw = Array.isArray(prop.frames[0])
@@ -832,6 +834,7 @@ export function createAnimatedRenderer(pack: MascotPack): {
   };
 
   const setProp = (prop: PropPack | null) => {
+    log("DEBUG", `setProp name=${prop?.name ?? 'null'} packName=${pack.name}`);
     setActiveProp(prop);
     setPropFrameIdx(0);
     if (prop) {
@@ -858,6 +861,7 @@ export function createAnimatedRenderer(pack: MascotPack): {
   };
 
   const setSecondaryProp = (prop: PropPack | null) => {
+    log("DEBUG", `setSecondaryProp name=${prop?.name ?? 'null'} packName=${pack.name}`);
     setSecondaryPropSignal(prop);
     setSecondaryPropFrameIdx(0);
     stopSecondaryPropTimer();

@@ -704,6 +704,8 @@ export function SidebarMascot(props: SidebarMascotProps): JSX.Element {
     const oldSecondaryProp = oldRenderer.getSecondaryProp();
     const oldHidden = oldRenderer.getCharacterHidden();
 
+    log("DEBUG", `switchToNext: cur=${cur} next=${nextName} oldProp=${oldProp?.name} oldSec=${oldSecondaryProp?.name} oldHidden=${oldHidden} phase=${currentPhase}`);
+
     oldRenderer.setProp(null);
     oldRenderer.setSecondaryProp(null);
     oldRenderer.setCharacterHidden(false);
@@ -719,6 +721,8 @@ export function SidebarMascot(props: SidebarMascotProps): JSX.Element {
 
     setCurrentName(nextName);
     setUserOverride(true);
+
+    log("DEBUG", `switchToNext done: newProp=${newRenderer.getProp()?.name} newSec=${newRenderer.getSecondaryProp()?.name} newHidden=${newRenderer.getCharacterHidden()}`);
   };
 
   const getCw = () => containerWidth() || 30;
@@ -940,10 +944,12 @@ export function SidebarMascot(props: SidebarMascotProps): JSX.Element {
         const prop = renderers[cn]?.getProp();
         const secProp = renderers[cn]?.getSecondaryProp();
         const hidden = renderers[cn]?.getCharacterHidden();
-        log("DEBUG", `RENDER propElement: name=${cn} prop=${prop?.name} secProp=${secProp?.name} hidden=${hidden}`);
+        const propEl = renderers[cn]?.propElement();
+        log("DEBUG", `RENDER propElement: name=${cn} prop=${prop?.name} secProp=${secProp?.name} hidden=${hidden} propElNull=${!propEl}`);
         return null;
       })()}
       {renderers[currentName()]?.propElement() ? (() => {
+        log("DEBUG", `PROP_BOX_RENDER name=${currentName()} prop=${renderers[currentName()]?.getProp()?.name}`);
         const isPad = renderers[currentName()]?.getProp()?.name === "pad";
         return (
           <box
