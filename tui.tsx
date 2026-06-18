@@ -22,37 +22,6 @@ try {
   }
 } catch {}
 
-function MascotStatusView(props: { api: any }) {
-  const theme = () => props.api.theme.current;
-  return (
-    <box gap={0}>
-      <text fg={theme()?.text} wrapMode="none">Mascot</text>
-      <box flexDirection="row" gap={1}>
-        <text
-          flexShrink={0}
-          style={{ fg: mascotVisible() ? theme()?.success : theme()?.textMuted }}
-        >
-          •
-        </text>
-        <text fg={theme()?.textMuted} wrapMode="none">
-          {"Mascot: " + (mascotVisible() ? "ON" : "OFF")}
-        </text>
-      </box>
-      <box flexDirection="row" gap={1}>
-        <text
-          flexShrink={0}
-          style={{ fg: phaseMachineOn() ? theme()?.success : theme()?.textMuted }}
-        >
-          •
-        </text>
-        <text fg={theme()?.textMuted} wrapMode="none">
-          {"Easter: " + (phaseMachineOn() ? "ON" : "OFF")}
-        </text>
-      </box>
-    </box>
-  );
-}
-
 // ==========================================================================
 // ⚠️ MOUNT 风暴根因修复 - 禁止删除此 createRoot 缓存 ⚠️
 // 根因: opencode session/index.tsx 的 Show/Switch 条件渲染导致 Sidebar 子树
@@ -65,6 +34,16 @@ function MascotStatusView(props: { api: any }) {
 // ==========================================================================
 let cachedSidebarElement: JSX.Element | null = null;
 let cachedSidebarDispose: (() => void) | null = null;
+
+// 强制卸载 cachedSidebar：清 reactive scope + null 缓存，下次 sidebar_content 调用重建
+// 用途：toggle off 时立刻消失（<Show> 在 createRoot 隔离 scope 内不响应，靠 dispose 强制清 native 节点）
+const disposeCachedSidebar = () => {
+  if (cachedSidebarDispose) {
+    cachedSidebarDispose();
+    cachedSidebarDispose = null;
+    cachedSidebarElement = null;
+  }
+};
 
 const tui: TuiPlugin = async (api, _options) => {
   const mascots = loadAllMascots()
@@ -79,12 +58,7 @@ const tui: TuiPlugin = async (api, _options) => {
             return <SidebarMascot mascots={mascots} api={api} />;
           });
         }
-        return (
-          <box flexDirection="column">
-            {cachedSidebarElement}
-            <MascotStatusView api={api} />
-          </box>
-        );
+        return cachedSidebarElement;
       },
       home_bottom() {
         return <HomeMascot mascots={mascots} api={api} />
@@ -104,6 +78,7 @@ const tui: TuiPlugin = async (api, _options) => {
           if (!next) {
             setPhaseMachineOn(false);
             stopPhaseMachine();
+            disposeCachedSidebar();
           }
           api.ui.toast({ message: `Mascot ${next ? "ON" : "OFF"}` });
         }
@@ -123,11 +98,7 @@ const tui: TuiPlugin = async (api, _options) => {
   }
 
   api.lifecycle.onDispose(() => {
-    if (cachedSidebarDispose) {
-      cachedSidebarDispose();
-      cachedSidebarDispose = null;
-      cachedSidebarElement = null;
-    }
+    disposeCachedSidebar();
   });
 
   checkAndUpdate(pluginVersion, (newVersion) => {
