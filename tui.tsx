@@ -84,7 +84,6 @@ const tui: TuiPlugin = async (api, _options) => {
           if (!next) {
             setPhaseMachineOn(false);
             stopPhaseMachine();
-            disposeCachedSidebar();
             hideMascotPosition();
           } else {
             showMascotPosition();
