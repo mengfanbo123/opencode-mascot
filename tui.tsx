@@ -85,19 +85,15 @@ const tui: TuiPlugin = async (api, _options) => {
           if (!next) {
             setPhaseMachineOn(false);
             stopPhaseMachine();
-            setTimeout(() => {
-              hideMascotPosition();
-              hideHomeMascotPosition();
-              log("INFO", "mascot.toggle OFF: phase stopped, position moved offscreen after delay");
-            }, 300);
+            hideMascotPosition();
+            hideHomeMascotPosition();
+            log("INFO", "mascot.toggle OFF: phase stopped, position moved offscreen");
           } else {
             setPhaseMachineOn(true);
             showMascotPosition();
             showHomeMascotPosition();
-            setTimeout(() => {
-              resumeBusyState();
-              log("INFO", "mascot.toggle ON: position restored, busy state resumed after delay");
-            }, 300);
+            resumeBusyState();
+            log("INFO", "mascot.toggle ON: position restored, busy state resumed");
           }
           api.ui.toast({ message: `Mascot ${next ? "ON" : "OFF"}` });
         }
