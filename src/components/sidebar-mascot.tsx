@@ -132,8 +132,8 @@ export const restoreMascotPosition = () => {
 let globalFallTimer: ReturnType<typeof setInterval> | null = null;
 
 export const fallToWorkY = () => {
-  const targetY = globalLastUserY ?? 30;
-  const targetX = globalLastUserX ?? 5;
+  const targetY = 30;
+  const targetX = 5;
   const startY = globalPosY();
   const startX = globalPosX();
   const needMove = Math.abs(startY - targetY) >= 2 || Math.abs(startX - targetX) >= 2;
