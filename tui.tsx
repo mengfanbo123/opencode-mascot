@@ -43,9 +43,7 @@ const [cachedSidebarEl, setCachedSidebarEl] = createSignal<JSX.Element | null>(n
 // forceRebuild 计数 signal：toggle on 自增，sidebar_content 读它建立依赖 → 强制重渲染。
 const [forceRebuild, setForceRebuild] = createSignal(0);
 
-// 强制卸载 cachedSidebar：清 reactive scope + null 缓存，下次 sidebar_content 调用重建
 const disposeCachedSidebar = () => {
-  log("INFO", `disposeCachedSidebar ENTERED, hasDispose=${!!cachedSidebarDispose}, hasCache=${!!cachedSidebarEl()}`);
   if (cachedSidebarDispose) {
     cachedSidebarDispose();
     cachedSidebarDispose = null;
@@ -60,9 +58,7 @@ const tui: TuiPlugin = async (api, _options) => {
     order: 160,
     slots: {
       sidebar_content() {
-        // 读 forceRebuild 建立 reactive 依赖：toggle on 自增时强制重渲染 slot
         forceRebuild();
-        log("DEBUG", `sidebar_content called, hasCache=${!!cachedSidebarEl()}, visible=${mascotVisible()}`);
         if (mascotVisible() && !cachedSidebarEl()) {
           resetSingletonRenderers();
           setCachedSidebarEl(createRoot((dispose) => {
