@@ -5,7 +5,7 @@ import { join, dirname } from "node:path"
 import { fileURLToPath } from "node:url"
 import { createRoot, createSignal, type JSX } from "solid-js"
 import { loadAllMascots } from "./src/core/mascot-loader"
-import { SidebarMascot, stopPhaseMachine, fallToWorkY, resetLastBusySessionId, triggerEasterIfBusy, resumeBusyState, resetSingletonRenderers } from "./src/components/sidebar-mascot"
+import { SidebarMascot, stopPhaseMachine, restoreMascotPosition, resetLastBusySessionId, triggerEasterIfBusy, resumeBusyState, resetSingletonRenderers } from "./src/components/sidebar-mascot"
 import { HomeMascot, hideHomeMascotPosition } from "./src/components/home-mascot"
 import { checkAndUpdate } from "./src/core/updater"
 import { emitCelebrate, emitVersion, emitScatter } from "./src/core/celebration-bus"
@@ -106,7 +106,7 @@ const tui: TuiPlugin = async (api, _options) => {
             setForceRebuild(forceRebuild() + 1);
             resetLastBusySessionId();
             resumeBusyState();
-            fallToWorkY();
+            restoreMascotPosition();
             setTimeout(() => triggerEasterIfBusy(), 1500);
             log("INFO", "mascot.toggle ON: forceRebuild++, fallToWorkY, easter trigger scheduled");
           }

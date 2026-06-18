@@ -115,6 +115,20 @@ export const showMascotPosition = () => {
   setGlobalPosX(restoreX);
   setGlobalPosY(restoreY);
 };
+
+// toggle on 位置恢复策略：
+// - busy: fallToWorkY 掉落到工作位置(5,30)
+// - idle: showMascotPosition 恢复拖拽位置或默认(20,2)
+//   - 无拖拽无pad: (20,2)默认 ✓
+//   - 拖拽过: globalLastUserX/Y 恢复拖拽位置 ✓
+//   - pad掉落: pad已清(stopPhaseMachine)，globalLastUserX/Y未改，恢复(20,2) ✓
+export const restoreMascotPosition = () => {
+  if (currentSessionStatus === "busy") {
+    fallToWorkY();
+  } else {
+    showMascotPosition();
+  }
+};
 let globalFallTimer: ReturnType<typeof setInterval> | null = null;
 
 export const fallToWorkY = () => {
