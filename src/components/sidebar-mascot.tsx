@@ -499,8 +499,8 @@ const triggerEasterEgg = () => {
   }
   const rnd = Math.random();
   log("DEBUG", `easter egg roll rnd=${rnd.toFixed(3)}`);
-  if (rnd < 0.25) {
-    // P1+P2 连贯：梯子爬完→显示器掉落→罚站 vibe，不可拆
+  if (rnd < 1.0) {
+    // P1+P2 连贯：梯子爬完→显示器掉落→罚站 vibe，不可拆（测试场景1+2: 100%触发）
     phaseMode = "p1p2";
     enterPhase1();
   } else if (rnd < 0.45) {
