@@ -697,35 +697,39 @@ export function SidebarMascot(props: SidebarMascotProps): JSX.Element {
     const idx = names.indexOf(cur);
     const nextName = names[(idx + 1) % names.length];
 
-    const inPhase = currentPhase > 0;
-    // 平滑过渡：不 stopPhaseMachine，保留 phase 上下文
-    // phase callback timer 回调动态读 currentName（已修 flySequence/diveSequence）
-    // 新形象继承旧形象 prop/secondaryProp/characterHidden 继续渲染
+    const wasPhase = currentPhase;
+    const wasMode = phaseMode;
+
+    if (wasPhase > 0) {
+      stopPhaseMachine();
+    }
 
     const oldRenderer = renderers[cur];
     const newRenderer = renderers[nextName];
     const oldState = oldRenderer.getState();
 
-    if (inPhase) {
-      newRenderer.setState(oldState);
-      log("DEBUG", `switchToNext inPhase=${currentPhase}: oldProp=${oldRenderer.getProp()?.name} oldSecondary=${oldRenderer.getSecondaryProp()?.name}`);
-      newRenderer.syncPropFromRenderer(oldRenderer);
-      newRenderer.syncSecondaryPropFromRenderer(oldRenderer);
-      newRenderer.setCharacterHidden(oldRenderer.getCharacterHidden());
-      log("DEBUG", `switchToNext after sync: newProp=${newRenderer.getProp()?.name} newSecondary=${newRenderer.getSecondaryProp()?.name} newHidden=${newRenderer.getCharacterHidden()}`);
-    } else {
-      newRenderer.setState(oldState);
-      newRenderer.setProp(null);
-      newRenderer.setSecondaryProp(null);
-      newRenderer.setCharacterHidden(false);
-    }
-
     oldRenderer.setProp(null);
     oldRenderer.setSecondaryProp(null);
     oldRenderer.setCharacterHidden(false);
 
+    newRenderer.setState(oldState);
+    newRenderer.setProp(null);
+    newRenderer.setSecondaryProp(null);
+    newRenderer.setCharacterHidden(false);
+
     setCurrentName(nextName);
     setUserOverride(true);
+
+    if (wasPhase > 0 && phaseMachineOn()) {
+      // 重进相同 phase：phase callback 动态读 currentName（dfa1a52 闭包已修）
+      // setProp 打到新形象，渲染层 propElement 读新形象 prop
+      log("DEBUG", `switchToNext re-enter phase=${wasPhase} mode=${wasMode} newName=${nextName}`);
+      trackTimeout(() => {
+        if (wasPhase === 1) enterPhase1();
+        else if (wasPhase === 2) enterPhase2();
+        else if (wasPhase === 3) enterPhase3();
+      }, 100);
+    }
   };
 
   const getCw = () => containerWidth() || 30;
