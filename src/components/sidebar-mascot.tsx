@@ -101,21 +101,19 @@ let globalLastUserY: number | null = null;
 let globalLastUserX: number | null = null;
 // toggle off 移屏（命令式）：createEffect 在 createRoot 隔离 scope 内不响应模块级 signal，
 // 由 tui.tsx handler 直接调。opentui 必响应 position 变化（小人靠 position 动）。
+// 不保存当前 position：phase 期间 position 被 enterPhase1 改到爬梯子位置(5,30)，
+// 保存后 toggle on 恢复 phase 残余位置 → 无 phase 上下文 → 不显示。
+// 只用 globalLastUserX/Y（用户拖拽位置）或默认值，showMascotPosition 同理。
 export const hideMascotPosition = () => {
-  if (globalLastUserX === null) globalLastUserX = globalPosX();
-  if (globalLastUserY === null) globalLastUserY = globalPosY();
   setGlobalPosX(-1000);
   setGlobalPosY(-1000);
 };
 export const showMascotPosition = () => {
   const restoreX = globalLastUserX ?? 20;
   const restoreY = globalLastUserY ?? 2;
-  log("DEBUG", `showMascotPosition: restore from saved(${globalLastUserX},${globalLastUserY}) to (${restoreX},${restoreY})`);
+  log("DEBUG", `showMascotPosition: restore from user(${globalLastUserX},${globalLastUserY}) to (${restoreX},${restoreY})`);
   setGlobalPosX(restoreX);
   setGlobalPosY(restoreY);
-  log("DEBUG", `showMascotPosition: after set, globalPosX=${globalPosX()}, globalPosY=${globalPosY()}, mascotVisible check next`);
-  globalLastUserX = null;
-  globalLastUserY = null;
 };
 let globalFallTimer: ReturnType<typeof setInterval> | null = null;
 
