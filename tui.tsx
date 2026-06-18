@@ -25,16 +25,29 @@ try {
 function MascotStatusView(props: { api: any }) {
   const theme = () => props.api.theme.current;
   return (
-    <box flexDirection="row" gap={1}>
-      <text
-        flexShrink={0}
-        style={{ fg: mascotVisible() ? theme()?.success : theme()?.textMuted }}
-      >
-        •
-      </text>
-      <text fg={theme()?.textMuted} wrapMode="none">
-        {"Mascot: " + (mascotVisible() ? "ON" : "OFF")}
-      </text>
+    <box flexDirection="column">
+      <box flexDirection="row" gap={1}>
+        <text
+          flexShrink={0}
+          style={{ fg: mascotVisible() ? theme()?.success : theme()?.textMuted }}
+        >
+          •
+        </text>
+        <text fg={theme()?.textMuted} wrapMode="none">
+          {"Mascot: " + (mascotVisible() ? "ON" : "OFF")}
+        </text>
+      </box>
+      <box flexDirection="row" gap={1}>
+        <text
+          flexShrink={0}
+          style={{ fg: phaseMachineOn() ? theme()?.success : theme()?.textMuted }}
+        >
+          •
+        </text>
+        <text fg={theme()?.textMuted} wrapMode="none">
+          {"Easter: " + (phaseMachineOn() ? "ON" : "OFF")}
+        </text>
+      </box>
     </box>
   );
 }
