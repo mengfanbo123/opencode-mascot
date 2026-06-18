@@ -5,11 +5,11 @@ import { join, dirname } from "node:path"
 import { fileURLToPath } from "node:url"
 import { createRoot, createSignal, type JSX } from "solid-js"
 import { loadAllMascots } from "./src/core/mascot-loader"
-import { SidebarMascot, stopPhaseMachine, restoreMascotPosition, resetLastBusySessionId, triggerEasterIfBusy, resumeBusyState, resetSingletonRenderers } from "./src/components/sidebar-mascot"
+import { SidebarMascot, stopPhaseMachine, restoreMascotPosition, resetLastBusySessionId, triggerEasterIfBusy, resumeBusyState } from "./src/components/sidebar-mascot"
 import { HomeMascot, hideHomeMascotPosition } from "./src/components/home-mascot"
 import { checkAndUpdate } from "./src/core/updater"
 import { emitCelebrate, emitVersion, emitScatter } from "./src/core/celebration-bus"
-import { mascotVisible, setMascotVisible, phaseMachineOn, setPhaseMachineOn } from "./src/core/mascot-state"
+import { mascotVisible, setMascotVisible, phaseMachineOn, setPhaseMachineOn, forceSidebarRebuild } from "./src/core/mascot-state"
 import { log } from "./src/core/logger"
 
 const __filename = fileURLToPath(import.meta.url);
@@ -59,8 +59,10 @@ const tui: TuiPlugin = async (api, _options) => {
     slots: {
       sidebar_content() {
         forceRebuild();
+        forceSidebarRebuild();
         if (mascotVisible() && !cachedSidebarEl()) {
-          resetSingletonRenderers();
+          // 不 resetSingletonRenderers：switchToNext 需 renderer 模块级保留 prop/state
+          // toggle on 才 reset（renderer 绑已 dispose scope）
           setCachedSidebarEl(createRoot((dispose) => {
             cachedSidebarDispose = dispose;
             return <SidebarMascot mascots={mascots} api={api} />;

@@ -1,13 +1,13 @@
 /** @jsxImportSource @opentui/solid */
 
-import { createSignal, createEffect, createMemo, onCleanup, Show } from "solid-js";
+import { createSignal, createEffect, onCleanup, Show } from "solid-js";
 import type { JSX } from "@opentui/solid";
 import type { MascotPack, MascotState } from "../core/types";
 import { createAnimatedRenderer } from "../core/ascii-renderer";
 import { onCelebrate, onVersion, onScatter, onPropShow } from "../core/celebration-bus";
 import { getProp } from "../core/prop-loader";
 import { log } from "../core/logger";
-import { mascotVisible, phaseMachineOn, globalCurrentName, setGlobalCurrentName } from "../core/mascot-state";
+import { mascotVisible, phaseMachineOn, globalCurrentName, setGlobalCurrentName, forceSidebarRebuild, setForceSidebarRebuild } from "../core/mascot-state";
 
 interface SidebarMascotProps {
   mascots: Record<string, MascotPack>;
@@ -649,27 +649,6 @@ export function SidebarMascot(props: SidebarMascotProps): JSX.Element {
 
   const [containerWidth, setContainerWidth] = createSignal(0);
 
-  // createMemo 包装 propElement box：currentName 变化强制重算
-  // 根因：渲染层 IIFE 三元 `propElement() ? (...) : null` 在 currentName 变后
-  // reactive 依赖未迁移到新 renderer 的 activeProp → propElement 不重算 → 不显示
-  const propBoxEl = createMemo(() => {
-    const cn = currentName();
-    const r = renderers[cn];
-    if (!r) return null;
-    const propEl = r.propElement();
-    const prop = r.getProp();
-    const isPad = prop?.name === "pad";
-    if (!propEl) return null;
-    return { cn, propEl, isPad, propName: prop?.name };
-  });
-  const secondaryPropBoxEl = createMemo(() => {
-    const cn = currentName();
-    const r = renderers[cn];
-    if (!r) return null;
-    const secEl = r.secondaryPropElement();
-    if (!secEl) return null;
-    return { cn, secEl };
-  });
   let dragStartX = 0;
   let dragStartY = 0;
   let dragAnchorX = 0;
@@ -743,6 +722,11 @@ export function SidebarMascot(props: SidebarMascotProps): JSX.Element {
 
     setCurrentName(nextName);
     setUserOverride(true);
+
+    // 强制 sidebar_content 重挂：createMemo/IIFE 在 opentui solid 不可靠
+    // 切形象后 propElement 不重算 → 机箱/显示器不显示
+    // forceSidebarRebuild 自增 → sidebar_content dispose+recreate → 渲染层读新 currentName
+    setForceSidebarRebuild(forceSidebarRebuild() + 1);
 
     log("DEBUG", `switchToNext done: newProp=${newRenderer.getProp()?.name} newSec=${newRenderer.getSecondaryProp()?.name} newHidden=${newRenderer.getCharacterHidden()}`);
   };
@@ -961,30 +945,20 @@ export function SidebarMascot(props: SidebarMascotProps): JSX.Element {
             ))}
           </box>
         ) : null}
-      {(() => {
-        const cn = currentName();
-        const prop = renderers[cn]?.getProp();
-        const secProp = renderers[cn]?.getSecondaryProp();
-        const hidden = renderers[cn]?.getCharacterHidden();
-        const propEl = renderers[cn]?.propElement();
-        log("DEBUG", `RENDER propElement: name=${cn} prop=${prop?.name} secProp=${secProp?.name} hidden=${hidden} propElNull=${!propEl}`);
-        return null;
-      })()}
-      {propBoxEl() ? (() => {
-        const pb = propBoxEl()!;
-        log("DEBUG", `PROP_BOX_RENDER name=${pb.cn} prop=${pb.propName}`);
+      {renderers[currentName()]?.propElement() ? (() => {
+        const isPad = renderers[currentName()]?.getProp()?.name === "pad";
         return (
           <box
             position="absolute"
-            left={posX() + (pb.isPad ? -1 : propOffset())}
-            top={posY() - (pb.isPad ? 2 : 0)}
-            zIndex={globalZBoost() ? 9998 : (pb.isPad ? 45 : 50)}
+            left={posX() + (isPad ? -1 : propOffset())}
+            top={posY() - (isPad ? 2 : 0)}
+            zIndex={globalZBoost() ? 9998 : (isPad ? 45 : 50)}
             onMouseDown={handleMouseDown}
             onMouseDrag={handleMouseDrag}
             onMouseUp={handleMouseUp}
             onMouseDragEnd={handleMouseUp}
           >
-            {pb.propEl}
+            {renderers[currentName()].propElement()}
           </box>
         );
       })() : null}
@@ -998,14 +972,14 @@ export function SidebarMascot(props: SidebarMascotProps): JSX.Element {
           <text fg="#FFFF00">⚡💥⚡</text>
         </box>
       ) : null}
-      {secondaryPropBoxEl() ? (
+      {renderers[currentName()]?.secondaryPropElement() ? (
         <box
           position="absolute"
           left={posX() + propOffset() - 3}
           top={posY() - 5 + globalFlyOffset()}
           zIndex={globalZBoost() ? 9998 : 50}
         >
-          {secondaryPropBoxEl()!.secEl}
+          {renderers[currentName()].secondaryPropElement()}
         </box>
       ) : null}
       {globalPadVisible() ? (() => {
