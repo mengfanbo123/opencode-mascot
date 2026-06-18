@@ -52,17 +52,19 @@ const tui: TuiPlugin = async (api, _options) => {
     order: 160,
     slots: {
       sidebar_content() {
-        if (!cachedSidebarElement) {
-          cachedSidebarElement = createRoot((dispose) => {
+        if (!cachedSidebarEl()) {
+          setCachedSidebarEl(createRoot((dispose) => {
             cachedSidebarDispose = dispose;
             return <SidebarMascot mascots={mascots} api={api} />;
-          });
+          }));
         }
         // Show 在 createRoot 外控制显隐：toggle off 立刻隐藏，on 立刻显示
         // createRoot 内 SidebarMascot 保留（堵 mount 风暴），Show 只切可见性
+        // cachedSidebarEl 必须 signal 化：toggle on dispose+recreate 后
+        //   Show 内引用才能响应变化（普通变量不触发更新）
         return (
           <Show when={mascotVisible()} fallback={<></>}>
-            {cachedSidebarElement}
+            {cachedSidebarEl()}
           </Show>
         );
       },
@@ -90,10 +92,10 @@ const tui: TuiPlugin = async (api, _options) => {
           } else {
             // dispose 旧 createRoot（reactive scope 已损坏），recreate 新 SidebarMascot
             disposeCachedSidebar();
-            cachedSidebarElement = createRoot((dispose) => {
+            setCachedSidebarEl(createRoot((dispose) => {
               cachedSidebarDispose = dispose;
               return <SidebarMascot mascots={mascots} api={api} />;
-            });
+            }));
             setMascotVisible(true);
             setPhaseMachineOn(true);
             resumeBusyState();
