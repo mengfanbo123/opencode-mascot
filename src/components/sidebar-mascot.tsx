@@ -590,8 +590,8 @@ const triggerEasterEgg = () => {
     return;
   }
   const rnd = Math.random();
-  if (rnd < 0.25) {
-    // P1+P2 连贯：梯子爬完→显示器掉落→罚站 vibe，不可拆
+  if (rnd < 0) {
+    // P1+P2 连贯：梯子爬完→显示器掉落→罚站 vibe（测试期关闭）
     phaseMode = "p1p2";
     enterPhase1();
   } else if (rnd < 1.0) {
