@@ -76,7 +76,7 @@ const tui: TuiPlugin = async (api, _options) => {
   if (api.command?.register) {
     api.command.register(() => [
       {
-        title: `${mascotVisible() ? "Hide" : "Show"} mascot character`,
+        title: `Mascot: ${mascotVisible() ? "Hide" : "Show"} mascot character`,
         value: "mascot.toggle",
         description: "Show/hide mascot character",
         onSelect: () => {
@@ -97,7 +97,7 @@ const tui: TuiPlugin = async (api, _options) => {
         }
       },
       {
-        title: `${phaseMachineOn() ? "Disable" : "Enable"} Easter eggs`,
+        title: `Mascot: ${phaseMachineOn() ? "Disable" : "Enable"} easter eggs`,
         value: "mascot.easter",
         description: "Turn Phase Machine on/off",
         onSelect: () => {
