@@ -428,11 +428,13 @@ export const enterPhase1 = () => {
         sid,
         () => {
           const laptop = getProp("laptop");
-          if (laptop) r.setSecondaryProp(laptop);
+          const fr = singletonRenderers?.[globalCurrentName()];
+          if (laptop && fr) fr.setSecondaryProp(laptop);
         },
         () => {
           startDiveSequence(sid, () => {
-            r.setCharacterHidden(true);
+            const fr = singletonRenderers?.[globalCurrentName()];
+            if (fr) fr.setCharacterHidden(true);
             setGlobalPosY(30); // reset Y for next cycle
             enterPhase2();
           });
@@ -696,29 +698,32 @@ export function SidebarMascot(props: SidebarMascotProps): JSX.Element {
     const nextName = names[(idx + 1) % names.length];
 
     const inPhase = currentPhase > 0;
-    if (inPhase) {
-      stopPhaseMachine();
-    }
+    // 平滑过渡：不 stopPhaseMachine，保留 phase 上下文
+    // phase callback timer 回调动态读 currentName（已修 flySequence/diveSequence）
+    // 新形象继承旧形象 prop/secondaryProp/characterHidden 继续渲染
 
     const oldRenderer = renderers[cur];
     const newRenderer = renderers[nextName];
     const oldState = oldRenderer.getState();
 
+    if (inPhase) {
+      newRenderer.setState(oldState);
+      newRenderer.setProp(oldRenderer.getProp());
+      newRenderer.setSecondaryProp(oldRenderer.getSecondaryProp());
+      newRenderer.setCharacterHidden(oldRenderer.getCharacterHidden());
+    } else {
+      newRenderer.setState(oldState);
+      newRenderer.setProp(null);
+      newRenderer.setSecondaryProp(null);
+      newRenderer.setCharacterHidden(false);
+    }
+
     oldRenderer.setProp(null);
     oldRenderer.setSecondaryProp(null);
     oldRenderer.setCharacterHidden(false);
 
-    newRenderer.setState(oldState);
-    newRenderer.setProp(null);
-    newRenderer.setSecondaryProp(null);
-    newRenderer.setCharacterHidden(false);
-
     setCurrentName(nextName);
     setUserOverride(true);
-
-    if (inPhase && phaseMachineOn()) {
-      trackTimeout(() => triggerEasterEgg(), 1200);
-    }
   };
 
   const getCw = () => containerWidth() || 30;
