@@ -5,6 +5,7 @@ import type { JSX } from "@opentui/solid";
 import type { MascotPack, MascotState, EffectTimerCtx, EffectRenderCtx, PropPack, PropPosition } from "./types";
 import { emitPropShow } from "./celebration-bus";
 import { log } from "./logger";
+import { mascotVisible } from "./mascot-state";
 
 const SUPERSCRIPT: Record<string, string> = {
   "0": "⁰", "1": "¹", "2": "²", "3": "³", "4": "⁴",
@@ -248,6 +249,7 @@ export function createAnimatedRenderer(pack: MascotPack): {
   const hasBlink = (pack.frames as Record<string, string[] | undefined>)["blink"] !== undefined;
 
   const blinkTimer = setInterval(() => {
+    if (!mascotVisible()) return;
     if (currentState() !== "sleeping" && Math.random() < anim.blinkChance && hasBlink) {
       setFrameOverride("blink");
       setTimeout(() => setFrameOverride(null), 150);
@@ -260,6 +262,7 @@ export function createAnimatedRenderer(pack: MascotPack): {
   );
 
   const expressionTimer = setInterval(() => {
+    if (!mascotVisible()) return;
     if (currentState() === "idle" && !frameOverride()) {
       const pick = availableExpressions[Math.floor(Math.random() * availableExpressions.length)];
       if (pick) {
@@ -271,6 +274,7 @@ export function createAnimatedRenderer(pack: MascotPack): {
 
   // 3. Breathing
   const breathTimer = setInterval(() => {
+    if (!mascotVisible()) return;
     if (currentState() === "idle") {
       setBreathPhase((v) => !v);
     }
@@ -285,6 +289,7 @@ export function createAnimatedRenderer(pack: MascotPack): {
     if (walkInterval || !walkEnabled()) return;
     walkStep = 0;
     walkInterval = setInterval(() => {
+      if (!mascotVisible()) return;
       if (currentState() !== "idle") {
         stopWalk();
         return;
@@ -359,7 +364,10 @@ export function createAnimatedRenderer(pack: MascotPack): {
   const effectTimers: ReturnType<typeof setInterval>[] = [];
   if (effects?.timers) {
     for (const t of effects.timers) {
-      effectTimers.push(setInterval(() => t.update(timerCtx), t.interval));
+      effectTimers.push(setInterval(() => {
+        if (!mascotVisible()) return;
+        t.update(timerCtx);
+      }, t.interval));
     }
   }
 
