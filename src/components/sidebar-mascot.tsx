@@ -722,11 +722,12 @@ export function SidebarMascot(props: SidebarMascotProps): JSX.Element {
     setCurrentName(nextName);
     setUserOverride(true);
 
-    // 梯子+电源线+vibe 同步闪：forceSidebarRebuild dispose 重建时机箱/显示器闪，
-    // 需同步消失再显示，否则空档期视觉不一致/左闪抖动
+    // 梯子+电源线+vibe+pad 同步闪：forceSidebarRebuild dispose 重建时机箱/显示器闪，
+    // 需同步消失再显示，否则空档期视觉不一致/左闪抖动/角色遮盖 pad
     const wasRope = globalRopeVisible();
     const wasPowerLine = globalPowerLineVisible();
     const wasVibe = globalVibeVisible();
+    const wasPad = globalPadVisible();
     if (wasRope) {
       setGlobalRopeVisible(false);
       trackTimeout(() => setGlobalRopeVisible(true), 300);
@@ -738,6 +739,10 @@ export function SidebarMascot(props: SidebarMascotProps): JSX.Element {
     if (wasVibe) {
       setGlobalVibeVisible(false);
       trackTimeout(() => setGlobalVibeVisible(true), 300);
+    }
+    if (wasPad) {
+      setGlobalPadVisible(false);
+      trackTimeout(() => setGlobalPadVisible(true), 300);
     }
 
     setForceSidebarRebuild(forceSidebarRebuild() + 1);
