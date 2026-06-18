@@ -89,9 +89,11 @@ const tui: TuiPlugin = async (api, _options) => {
             hideHomeMascotPosition();
             log("INFO", "mascot.toggle OFF: position moved offscreen (sidebar+home), stopPhaseMachine called, ascii-renderer timers guarded by mascotVisible()=false");
           } else {
+            setPhaseMachineOn(true);
             showMascotPosition();
             showHomeMascotPosition();
-            log("INFO", "mascot.toggle ON: position restored (sidebar+home), timers resume");
+            triggerEasterIfBusy();
+            log("INFO", "mascot.toggle ON: position restored (sidebar+home), easter resumed, timers resume");
           }
           api.ui.toast({ message: `Mascot ${next ? "ON" : "OFF"}` });
         }
