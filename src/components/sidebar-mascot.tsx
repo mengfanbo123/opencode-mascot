@@ -722,30 +722,31 @@ export function SidebarMascot(props: SidebarMascotProps): JSX.Element {
     setCurrentName(nextName);
     setUserOverride(true);
 
+    // 全场景统一：forceSidebarRebuild 重挂渲染层
+    // pad 期间角色 hidden=true 保持（继承 oldHidden），重挂后不闪现
+    // 梯子/电源线/vibe/pad 同步闪避免空档抖动
+    const wasRope = globalRopeVisible();
+    const wasPowerLine = globalPowerLineVisible();
+    const wasVibe = globalVibeVisible();
     const wasPad = globalPadVisible();
-    if (wasPad) {
-      // pad 期间：pad 渲染层读 currentName() 自动切 frames，不 forceSidebarRebuild
-      // 避免角色重挂闪动遮盖 pad
-      log("DEBUG", `switchToNext in pad: skip rebuild, pad frames auto-switch`);
-    } else {
-      // 非pad：梯子+电源线+vibe 同步闪 + forceSidebarRebuild 重挂渲染层
-      const wasRope = globalRopeVisible();
-      const wasPowerLine = globalPowerLineVisible();
-      const wasVibe = globalVibeVisible();
-      if (wasRope) {
-        setGlobalRopeVisible(false);
-        trackTimeout(() => setGlobalRopeVisible(true), 300);
-      }
-      if (wasPowerLine) {
-        setGlobalPowerLineVisible(false);
-        trackTimeout(() => setGlobalPowerLineVisible(true), 300);
-      }
-      if (wasVibe) {
-        setGlobalVibeVisible(false);
-        trackTimeout(() => setGlobalVibeVisible(true), 300);
-      }
-      setForceSidebarRebuild(forceSidebarRebuild() + 1);
+    if (wasRope) {
+      setGlobalRopeVisible(false);
+      trackTimeout(() => setGlobalRopeVisible(true), 300);
     }
+    if (wasPowerLine) {
+      setGlobalPowerLineVisible(false);
+      trackTimeout(() => setGlobalPowerLineVisible(true), 300);
+    }
+    if (wasVibe) {
+      setGlobalVibeVisible(false);
+      trackTimeout(() => setGlobalVibeVisible(true), 300);
+    }
+    if (wasPad) {
+      setGlobalPadVisible(false);
+      trackTimeout(() => setGlobalPadVisible(true), 300);
+    }
+
+    setForceSidebarRebuild(forceSidebarRebuild() + 1);
 
     log("DEBUG", `switchToNext done: newProp=${newRenderer.getProp()?.name} newSec=${newRenderer.getSecondaryProp()?.name} newHidden=${newRenderer.getCharacterHidden()}`);
   };
