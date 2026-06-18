@@ -694,29 +694,33 @@ export function SidebarMascot(props: SidebarMascotProps): JSX.Element {
     const nextName = names[(idx + 1) % names.length];
 
     const inPhase = currentPhase > 0;
-    if (inPhase) {
-      stopPhaseMachine();
-    }
+    // 平滑过渡：不 stopPhaseMachine，保留当前 phase 上下文
+    // 新形象直接接续渲染，彩蛋动画继续不重启
 
     const oldRenderer = renderers[cur];
     const newRenderer = renderers[nextName];
     const oldState = oldRenderer.getState();
 
+    // 切形象：新形象继承旧形象 state + prop（继续当前 phase 动画）
+    newRenderer.setState(oldState);
+    if (inPhase) {
+      // phase 中：把当前 prop 传给新形象，characterHidden 同步
+      newRenderer.setProp(oldRenderer.getProp());
+      newRenderer.setSecondaryProp(oldRenderer.getSecondaryProp());
+      newRenderer.setCharacterHidden(oldRenderer.getCharacterHidden());
+    } else {
+      newRenderer.setProp(null);
+      newRenderer.setSecondaryProp(null);
+      newRenderer.setCharacterHidden(false);
+    }
+
+    // 清旧形象 prop（避免双显）
     oldRenderer.setProp(null);
     oldRenderer.setSecondaryProp(null);
     oldRenderer.setCharacterHidden(false);
 
-    newRenderer.setState(oldState);
-    newRenderer.setProp(null);
-    newRenderer.setSecondaryProp(null);
-    newRenderer.setCharacterHidden(false);
-
     setCurrentName(nextName);
     setUserOverride(true);
-
-    if (inPhase && phaseMachineOn()) {
-      trackTimeout(() => triggerEasterEgg(), 1200);
-    }
   };
 
   const getCw = () => containerWidth() || 30;
