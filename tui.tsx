@@ -85,16 +85,19 @@ const tui: TuiPlugin = async (api, _options) => {
           if (!next) {
             setPhaseMachineOn(false);
             stopPhaseMachine();
-            hideMascotPosition();
-            hideHomeMascotPosition();
-            log("INFO", "mascot.toggle OFF: position moved offscreen (sidebar+home), stopPhaseMachine called, ascii-renderer timers guarded by mascotVisible()=false");
+            setTimeout(() => {
+              hideMascotPosition();
+              hideHomeMascotPosition();
+              log("INFO", "mascot.toggle OFF: phase stopped, position moved offscreen after delay");
+            }, 300);
           } else {
             setPhaseMachineOn(true);
             showMascotPosition();
             showHomeMascotPosition();
-            resumeBusyState();
-            markToggleOnCooldown(3000);
-            log("INFO", "mascot.toggle ON: position restored (sidebar+home), easter resumed, busy state restored, 3s cooldown active");
+            setTimeout(() => {
+              resumeBusyState();
+              log("INFO", "mascot.toggle ON: position restored, busy state resumed after delay");
+            }, 300);
           }
           api.ui.toast({ message: `Mascot ${next ? "ON" : "OFF"}` });
         }
