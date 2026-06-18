@@ -2,6 +2,15 @@
 
 本项目版本号遵循 semver。每个版本列出主要变更。
 
+## [1.1.0] - 2026-06-19
+
+### Fixed
+- **P3 pad 彩蛋解除 blackout 绑定**：pad 彩蛋结束不再触发电源线断电+黑屏动画（P1+P2 流程遗留），直接恢复 busy
+- **pad 双击切换形象**：pad box 加 onMouseDown 绑定（原来没绑 → 双击不触发）
+- **pad 形象身体特征区分**：cat pad `/|A|\` 猫身体、baozi pad `(○)` 圆润身体（替代月儿 `┃█┃`）
+- **pad 期间切形象防 effect 泄漏**：switchToNext pad 期间先 stopAllAnimTimers 清动画 timer，防角色 effect 帧泄漏遮盖 pad
+- **pad 结束动态读 renderer**：startPadSlideOut onDone 动态读 `singletonRenderers[globalCurrentName()]`（pad 期间双击切形象后 r 闭包过期 → 新形象不显示）
+
 ## [0.9.10] - 2026-06-19
 
 ### Fixed

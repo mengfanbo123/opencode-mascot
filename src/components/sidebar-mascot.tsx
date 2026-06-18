@@ -596,12 +596,12 @@ const triggerEasterEgg = () => {
     return;
   }
   const rnd = Math.random();
-  if (rnd < 0) {
-    // P1+P2 连贯：梯子爬完→显示器掉落→罚站 vibe（测试期关闭）
+  if (rnd < 0.25) {
+    // P1+P2 连贯：梯子爬完→显示器掉落→罚站 vibe
     phaseMode = "p1p2";
     enterPhase1();
-  } else if (rnd < 1.0) {
-    // P3 单独：pad peek（测试期 100%触发）
+  } else if (rnd < 0.45) {
+    // P3 单独：pad peek
     phaseMode = "p3";
     const r = singletonRenderers?.[globalCurrentName()];
     if (!r) { phaseMode = "none"; return; }

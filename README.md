@@ -266,7 +266,8 @@ All built-in animations (blink/breath/walk/jump/sleep/drag/color-flash/bomb/fall
 | Alien text phrases | 24 (12/character) |
 | Flash colors | 8 |
 | Drag alien text | 6 |
-| **Total** | **60+** |
+| Pad mini-games | 9 (3 games/character × 3 characters) |
+| **Total** | **70+** |
 
 ## 📄 License
 
