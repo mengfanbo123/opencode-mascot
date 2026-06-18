@@ -10,6 +10,7 @@ import { HomeMascot } from "./src/components/home-mascot"
 import { checkAndUpdate } from "./src/core/updater"
 import { emitCelebrate, emitVersion, emitScatter } from "./src/core/celebration-bus"
 import { mascotVisible, setMascotVisible, phaseMachineOn, setPhaseMachineOn } from "./src/core/mascot-state"
+import { log } from "./src/core/logger"
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -85,8 +86,10 @@ const tui: TuiPlugin = async (api, _options) => {
             setPhaseMachineOn(false);
             stopPhaseMachine();
             hideMascotPosition();
+            log("INFO", "mascot.toggle OFF: position moved offscreen, stopPhaseMachine called, ascii-renderer timers guarded by mascotVisible()=false");
           } else {
             showMascotPosition();
+            log("INFO", "mascot.toggle ON: position restored, timers resume");
           }
           api.ui.toast({ message: `Mascot ${next ? "ON" : "OFF"}` });
         }
