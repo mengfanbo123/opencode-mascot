@@ -723,12 +723,17 @@ export function SidebarMascot(props: SidebarMascotProps): JSX.Element {
     setCurrentName(nextName);
     setUserOverride(true);
 
-    // 电源线同步闪：forceSidebarRebuild dispose 重建时机箱/显示器闪，
-    // 电源线需同步消失再显示，否则空档期视觉不一致
+    // 电源线+vibe 同步闪：forceSidebarRebuild dispose 重建时机箱/显示器闪，
+    // 电源线/vibe 需同步消失再显示，否则空档期视觉不一致/vibe 左闪抖动
     const wasPowerLine = globalPowerLineVisible();
+    const wasVibe = globalVibeVisible();
     if (wasPowerLine) {
       setGlobalPowerLineVisible(false);
       trackTimeout(() => setGlobalPowerLineVisible(true), 300);
+    }
+    if (wasVibe) {
+      setGlobalVibeVisible(false);
+      trackTimeout(() => setGlobalVibeVisible(true), 300);
     }
 
     setForceSidebarRebuild(forceSidebarRebuild() + 1);
@@ -967,11 +972,14 @@ export function SidebarMascot(props: SidebarMascotProps): JSX.Element {
           </box>
         );
       })() : null}
-      {globalPowerLineVisible() ? (
-        <box position="absolute" left={posX() + propOffset() + 10} top={posY() + 4} zIndex={49}>
-          <text fg="#888888">{"━".repeat(80)}</text>
-        </box>
-      ) : null}
+      {globalPowerLineVisible() ? (() => {
+        const powerLineFg = props.mascots[currentName()]?.colors?.defaultFg || "#888888";
+        return (
+          <box position="absolute" left={posX() + propOffset() + 10} top={posY() + 4} zIndex={49}>
+            <text fg={powerLineFg}>{"━".repeat(80)}</text>
+          </box>
+        );
+      })() : null}
       {globalSparkVisible() ? (
         <box position="absolute" left={posX() + propOffset() + 10} top={posY() + 3} zIndex={51}>
           <text fg="#FFFF00">⚡💥⚡</text>
