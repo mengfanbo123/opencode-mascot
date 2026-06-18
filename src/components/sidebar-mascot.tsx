@@ -487,11 +487,11 @@ const triggerEasterEgg = () => {
   }
   const rnd = Math.random();
   log("DEBUG", `easter egg roll rnd=${rnd.toFixed(3)}`);
-  if (rnd < 0.25) {
-    // P1+P2 连贯：梯子爬完→显示器掉落→罚站 vibe，不可拆
+  if (rnd < 0.80) {
+    // P1+P2 连贯：梯子爬完→显示器掉落→罚站 vibe，不可拆（测试期高概率）
     phaseMode = "p1p2";
     enterPhase1();
-  } else if (rnd < 0.45) {
+  } else if (rnd < 0.90) {
     // P3 单独：pad peek
     phaseMode = "p3";
     const r = singletonRenderers?.[globalCurrentName()];
@@ -501,7 +501,7 @@ const triggerEasterEgg = () => {
     r.setCharacterHidden(false);
     setGlobalOnMachine(false);
     enterPhase3();
-  } else if (rnd < 0.55) {
+  } else if (rnd < 0.95) {
     // 炸弹 scatter
     phaseMode = "bomb";
     singletonRenderers?.[globalCurrentName()]?.scatterIn();
