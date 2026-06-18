@@ -1012,6 +1012,10 @@ export function SidebarMascot(props: SidebarMascotProps): JSX.Element {
             top={posY() - 2}
             zIndex={globalZBoost() ? 9998 : 45}
             flexDirection="column"
+            onMouseDown={handleMouseDown}
+            onMouseDrag={handleMouseDrag}
+            onMouseUp={handleMouseUp}
+            onMouseDragEnd={handleMouseUp}
           >
             {lines.map((line: string) => (
               <text fg={fg}>{line}</text>
