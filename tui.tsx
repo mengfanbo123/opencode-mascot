@@ -93,14 +93,17 @@ const tui: TuiPlugin = async (api, _options) => {
             hideHomeMascotPosition();
             log("INFO", "mascot.toggle OFF: phase stopped, position moved offscreen");
           } else {
-            // dispose 旧 createRoot + reset 旧 renderer，让 sidebar_content 下次调用自然重建
-            // 不手动 createRoot：避免与 sidebar_content 竞争创建两个 root（renderer 绑废 scope）
-            disposeCachedSidebar();
+            // 顺序关键：reset 先于 dispose
+            // - resetSingletonRenderers 先 destroy 旧 renderer + singletonRenderers=null
+            // - disposeCachedSidebar 后 setCachedSidebarEl(null) 触发 sidebar_content
+            // - sidebar_content 建 root1，root1 的 SidebarMascot 因 singletonRenderers=null 建全新 renderer
+            // 若顺序反：sidebar_content 抢先建 root1 复用旧 renderer，reset 后 destroy 旧 renderer → root1 持废引用
             resetSingletonRenderers();
+            disposeCachedSidebar();
             setMascotVisible(true);
             setPhaseMachineOn(true);
             resumeBusyState();
-            log("INFO", "mascot.toggle ON: disposed cache + reset renderers, sidebar_content will recreate");
+            log("INFO", "mascot.toggle ON: reset renderers + disposed cache, sidebar_content will recreate");
           }
           api.ui.toast({ message: `Mascot ${next ? "ON" : "OFF"}` });
         }
