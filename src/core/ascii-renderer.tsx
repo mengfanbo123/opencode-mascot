@@ -386,6 +386,7 @@ export function createAnimatedRenderer(pack: MascotPack): {
   // 内存采样：每2秒记录heapUsed，卡死时日志有增长曲线
   let memLastLogged = 0;
   const memSampleTimer = setInterval(() => {
+    if (!mascotVisible()) return;
     const mu = process.memoryUsage();
     const heapMB = Math.round(mu.heapUsed / 1024 / 1024);
     const delta = heapMB - memLastLogged;
@@ -396,6 +397,7 @@ export function createAnimatedRenderer(pack: MascotPack): {
   }, 2000);
 
   const perfGuardTimer = setInterval(() => {
+    if (!mascotVisible()) return;
     if (Date.now() - perfStart < 5000) return; // 5s warmup
     const t0 = Date.now();
     const frameName = frameOverride() ?? STATE_TO_FRAME[currentState()] ?? "default";
