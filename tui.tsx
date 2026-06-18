@@ -3,6 +3,7 @@ import type { TuiPlugin, TuiPluginModule } from "@opencode-ai/plugin/tui"
 import { readFileSync } from "node:fs"
 import { join, dirname } from "node:path"
 import { fileURLToPath } from "node:url"
+import { createRoot, type JSX } from "solid-js"
 import { loadAllMascots } from "./src/core/mascot-loader"
 import { SidebarMascot } from "./src/components/sidebar-mascot"
 import { HomeMascot } from "./src/components/home-mascot"
@@ -38,18 +39,37 @@ function MascotStatusView(props: { api: any }) {
   );
 }
 
+// ==========================================================================
+// ⚠️ MOUNT 风暴根因修复 - 禁止删除此 createRoot 缓存 ⚠️
+// 根因: opencode session/index.tsx 的 Show/Switch 条件渲染导致 Sidebar 子树
+//       每秒 destroy/recreate 3-4 次 → opentui reconciler bug #733/#680
+//       → native 层 stale node 累积 → RSS 涨到 2GB 卡死
+// 修复: createRoot 创建的 reactive scope 不在父组件 owner 下，
+//       父组件 destroy 时 dispose 不到这个 root 的 native 节点
+// 数据: mount 从 1380 次/2分钟 → 1 次（2026-06-17 独立 demo 验证）
+// ⚠️ 月儿 2026-06-17 曾误删此缓存导致 mount 风暴回归，禁止再删 ⚠️
+// ==========================================================================
+let cachedSidebarElement: JSX.Element | null = null;
+let cachedSidebarDispose: (() => void) | null = null;
+
 const tui: TuiPlugin = async (api, _options) => {
   const mascots = loadAllMascots()
 
   api.slots.register({
     slots: {
       sidebar_content() {
-        return (
-          <box flexDirection="column">
-            <SidebarMascot mascots={mascots} api={api} />
-            <MascotStatusView api={api} />
-          </box>
-        );
+        if (!cachedSidebarElement) {
+          cachedSidebarElement = createRoot((dispose) => {
+            cachedSidebarDispose = dispose;
+            return (
+              <box flexDirection="column">
+                <SidebarMascot mascots={mascots} api={api} />
+                <MascotStatusView api={api} />
+              </box>
+            );
+          });
+        }
+        return cachedSidebarElement;
       },
       home_bottom() {
         return <HomeMascot mascots={mascots} api={api} />
@@ -88,7 +108,13 @@ const tui: TuiPlugin = async (api, _options) => {
     ])
   }
 
-  api.lifecycle.onDispose(() => {});
+  api.lifecycle.onDispose(() => {
+    if (cachedSidebarDispose) {
+      cachedSidebarDispose();
+      cachedSidebarDispose = null;
+      cachedSidebarElement = null;
+    }
+  });
 
   checkAndUpdate(pluginVersion, (newVersion) => {
     emitCelebrate(newVersion);
