@@ -3,9 +3,9 @@ import type { TuiPlugin, TuiPluginModule } from "@opencode-ai/plugin/tui"
 import { readFileSync } from "node:fs"
 import { join, dirname } from "node:path"
 import { fileURLToPath } from "node:url"
-import { createRoot, createSignal, Show, type JSX } from "solid-js"
+import { createRoot, createSignal, type JSX } from "solid-js"
 import { loadAllMascots } from "./src/core/mascot-loader"
-import { SidebarMascot, stopPhaseMachine, hideMascotPosition, showMascotPosition, resetLastBusySessionId, triggerEasterIfBusy, resumeBusyState } from "./src/components/sidebar-mascot"
+import { SidebarMascot, stopPhaseMachine, showMascotPosition, resetLastBusySessionId, triggerEasterIfBusy, resumeBusyState } from "./src/components/sidebar-mascot"
 import { HomeMascot, hideHomeMascotPosition } from "./src/components/home-mascot"
 import { checkAndUpdate } from "./src/core/updater"
 import { emitCelebrate, emitVersion, emitScatter } from "./src/core/celebration-bus"
@@ -56,19 +56,17 @@ const tui: TuiPlugin = async (api, _options) => {
     order: 160,
     slots: {
       sidebar_content() {
-        // 诊断阶段：记录每次调用，验证缓存假设
-        log("DEBUG", `sidebar_content called, hasCache=${!!cachedSidebarEl()}, hasDispose=${!!cachedSidebarDispose}`);
-        if (!cachedSidebarEl()) {
+        log("DEBUG", `sidebar_content called, hasCache=${!!cachedSidebarEl()}, visible=${mascotVisible()}`);
+        if (mascotVisible() && !cachedSidebarEl()) {
           setCachedSidebarEl(createRoot((dispose) => {
             cachedSidebarDispose = dispose;
             return <SidebarMascot mascots={mascots} api={api} />;
           }));
         }
-        return (
-          <Show when={mascotVisible()} fallback={<></>}>
-            {cachedSidebarEl()}
-          </Show>
-        );
+        // 不用 Show：opentui reconciler 对 Show fallback 的空 box measure function 冲突
+        // toggle off 时 disposeCachedSidebar 清 cache → slot 返回 null → 真正 unmount
+        // toggle on 时 cachedSidebarEl 为 null → 下次 slot 调用重建
+        return cachedSidebarEl() ?? null;
       },
       home_bottom() {
         return <HomeMascot mascots={mascots} api={api} />
@@ -86,21 +84,21 @@ const tui: TuiPlugin = async (api, _options) => {
           log("INFO", "mascot.toggle onSelect ENTERED, current visible=" + mascotVisible());
           const next = !mascotVisible();
           if (!next) {
+            // toggle off：dispose cache，sidebar_content 下次返回 null → 真正 unmount
+            // 避免 Show fallback 空 box + measure function 冲突（reconciler 崩溃）
             setMascotVisible(false);
             setPhaseMachineOn(false);
             stopPhaseMachine();
-            hideMascotPosition();
             hideHomeMascotPosition();
-            log("INFO", "mascot.toggle OFF: phase stopped, position moved offscreen");
+            disposeCachedSidebar();
+            log("INFO", "mascot.toggle OFF: cache disposed, sidebar_content returns null next");
           } else {
-            // 纯 Show 切换：不 dispose/recreate createRoot，避开 reactive 竞争
-            // cachedSidebarEl 是 signal，Show 响应 mascotVisible 切显隐
-            // createRoot 缓存不动 → renderer 不动 → native 节点不孤儿
+            // toggle on：sidebar_content 检测 mascotVisible + cachedSidebarEl=null 时重建
             setMascotVisible(true);
             setPhaseMachineOn(true);
             showMascotPosition();
             resumeBusyState();
-            log("INFO", "mascot.toggle ON: show via signal, cache untouched");
+            log("INFO", "mascot.toggle ON: signal set, sidebar_content will rebuild on next call");
           }
           api.ui.toast({ message: `Mascot ${next ? "ON" : "OFF"}` });
         }
