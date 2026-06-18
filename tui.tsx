@@ -6,7 +6,7 @@ import { fileURLToPath } from "node:url"
 import { createRoot, Show, type JSX } from "solid-js"
 import { loadAllMascots } from "./src/core/mascot-loader"
 import { SidebarMascot, stopPhaseMachine, hideMascotPosition, showMascotPosition } from "./src/components/sidebar-mascot"
-import { HomeMascot } from "./src/components/home-mascot"
+import { HomeMascot, hideHomeMascotPosition, showHomeMascotPosition } from "./src/components/home-mascot"
 import { checkAndUpdate } from "./src/core/updater"
 import { emitCelebrate, emitVersion, emitScatter } from "./src/core/celebration-bus"
 import { mascotVisible, setMascotVisible, phaseMachineOn, setPhaseMachineOn } from "./src/core/mascot-state"
@@ -86,10 +86,12 @@ const tui: TuiPlugin = async (api, _options) => {
             setPhaseMachineOn(false);
             stopPhaseMachine();
             hideMascotPosition();
-            log("INFO", "mascot.toggle OFF: position moved offscreen, stopPhaseMachine called, ascii-renderer timers guarded by mascotVisible()=false");
+            hideHomeMascotPosition();
+            log("INFO", "mascot.toggle OFF: position moved offscreen (sidebar+home), stopPhaseMachine called, ascii-renderer timers guarded by mascotVisible()=false");
           } else {
             showMascotPosition();
-            log("INFO", "mascot.toggle ON: position restored, timers resume");
+            showHomeMascotPosition();
+            log("INFO", "mascot.toggle ON: position restored (sidebar+home), timers resume");
           }
           api.ui.toast({ message: `Mascot ${next ? "ON" : "OFF"}` });
         }

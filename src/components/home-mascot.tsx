@@ -21,6 +21,19 @@ let homeStartupTriggered = false;
 const [homeCurX, setHomeCurX] = createSignal(0);
 const [homeCurY, setHomeCurY] = createSignal(7);
 
+let homeSavedX = 0;
+let homeSavedY = 7;
+export const hideHomeMascotPosition = () => {
+  homeSavedX = homeCurX();
+  homeSavedY = homeCurY();
+  setHomeCurX(-1000);
+  setHomeCurY(-1000);
+};
+export const showHomeMascotPosition = () => {
+  setHomeCurX(homeSavedX);
+  setHomeCurY(homeSavedY);
+};
+
 export function HomeMascot(props: HomeMascotProps): JSX.Element {
   const names = Object.keys(props.mascots);
   const initialName = props.mascots["yueer"] ? "yueer" : names[0];
