@@ -2,6 +2,19 @@
 
 本项目版本号遵循 semver。每个版本列出主要变更。
 
+## [0.9.9] - 2026-06-19
+
+### Fixed
+- **toggle off→on 全场景修复**：forceRebuild 计数 signal 触发 sidebar_content slot 重渲染（opencode slot 只追踪 cachedSidebarEl，toggle on 时 cache 已 null，setNull 无变化不重渲染）。配合 resetSingletonRenderers 避免复用绑已 dispose scope 的旧 renderer（native 节点孤儿）。sidebar_content 去 Show 改 null unmount（避 opentui reconciler measure function box + children 冲突崩溃）
+- **cachedSidebarEl signal 化**：普通变量改 createSignal，让 Show 响应 toggle on dispose+recreate 后的变化
+- **home→work 跳转修复**：sidebar_content 检测 cachedSidebarEl + visible 重建 createRoot
+- **restoreMascotPosition 位置恢复策略**：busy 用 fallToWorkY 掉落到工作位置 (5,30)，idle 用 showMascotPosition 恢复拖拽位置或默认 (20,2)
+- **fallToWorkY 固定位置**：始终 (5,30) 不回拖拽位置（原 globalLastUserX/Y ?? 30/5 在拖拽后 busy 多次 fallToWorkY 会回拖拽位置，与 phase machine 固定起点冲突）
+
+### Added
+- **黑屏 laptop+pc-case prop**：断电后显示器+机箱闪 4 次黑屏渐变（laptop-black.ts 渐变 `░▒▒▓▓▓██▓▓▓▒▒░`，pc-case-black.ts 灯灭）后完全消失，而非直接消失
+- **resetSingletonRenderers**：destroy 旧 renderer + 清 listener/unsubs，toggle on dispose+recreate createRoot 前调用
+
 ## [0.9.1] - 2026-06-17
 
 ### Fixed
