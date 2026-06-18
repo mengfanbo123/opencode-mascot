@@ -2,6 +2,13 @@
 
 本项目版本号遵循 semver。每个版本列出主要变更。
 
+## [0.9.10] - 2026-06-19
+
+### Fixed
+- **双击切形象机箱/显示器不显示修复**：forceSidebarRebuild 计数 signal 触发 sidebar_content dispose+recreate createRoot。根因：createMemo/IIFE 在 opentui solid 不可靠，切形象后 propElement 不重算。log 铁证：setProp 成功打到新形象但渲染层 RENDER propElement 全是旧形象
+- **切形象梯子/电源线/vibe 同步闪**：forceSidebarRebuild dispose 重建时机箱/显示器闪，梯子(rope)/电源线(powerLine)/vibe 需同步隐藏 300ms 后恢复，否则空档期视觉不一致/vibe 左闪抖动
+- **电源线颜色跟随形象**：用当前形象 defaultFg 替代固定 #888888，与机箱/显示器一致（yueer=#8B7EB8, baozi=#D4885A, cat=#FFA500）
+
 ## [0.9.9] - 2026-06-19
 
 ### Fixed
