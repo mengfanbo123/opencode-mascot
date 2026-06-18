@@ -62,6 +62,12 @@ let padFrameTimer: ReturnType<typeof setInterval> | null = null;
 let vibeTimer: ReturnType<typeof setInterval> | null = null;
 let lastBusySessionId: string | null = null;
 export const resetLastBusySessionId = () => { lastBusySessionId = null; };
+
+export const triggerEasterIfBusy = () => {
+  if (lastBusySessionId !== null && phaseMachineOn()) {
+    trackTimeout(() => triggerEasterEgg(), 1200);
+  }
+};
 let globalScattered = false;
 let globalLastUserY: number | null = null;
 let globalLastUserX: number | null = null;

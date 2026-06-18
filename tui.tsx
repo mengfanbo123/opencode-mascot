@@ -5,7 +5,7 @@ import { join, dirname } from "node:path"
 import { fileURLToPath } from "node:url"
 import { createRoot, Show, type JSX } from "solid-js"
 import { loadAllMascots } from "./src/core/mascot-loader"
-import { SidebarMascot, stopPhaseMachine, hideMascotPosition, showMascotPosition, resetLastBusySessionId } from "./src/components/sidebar-mascot"
+import { SidebarMascot, stopPhaseMachine, hideMascotPosition, showMascotPosition, resetLastBusySessionId, triggerEasterIfBusy } from "./src/components/sidebar-mascot"
 import { HomeMascot, hideHomeMascotPosition, showHomeMascotPosition } from "./src/components/home-mascot"
 import { checkAndUpdate } from "./src/core/updater"
 import { emitCelebrate, emitVersion, emitScatter } from "./src/core/celebration-bus"
@@ -104,7 +104,7 @@ const tui: TuiPlugin = async (api, _options) => {
           const next = !phaseMachineOn();
           setPhaseMachineOn(next);
           if (!next) stopPhaseMachine();
-          else resetLastBusySessionId();
+          else { resetLastBusySessionId(); triggerEasterIfBusy(); }
           api.ui.toast({ message: `Easter: ${next ? "ON" : "OFF"}` });
         }
       }
