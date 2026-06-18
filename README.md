@@ -164,6 +164,24 @@ A 4-phase animation cycle triggered on `session busy`:
 
 ---
 
+### ⌨️ Command Palette (2 commands)
+
+Open command palette with `Ctrl+P` (or your leader key), type to filter:
+
+| Command | Description |
+|---------|-------------|
+| `Mascot: Toggle visibility` | Show/hide the mascot entirely (stops all animations + props) |
+| `Mascot: Toggle easter eggs` | Enable/disable Phase Machine easter eggs (character stays, animations stop) |
+
+**Three-layer state model**:
+- toggle on + easter on → full experience (character + random easter eggs)
+- toggle on + easter off → character only, no easter eggs
+- toggle off → mascot fully disabled
+
+Double-click the mascot to cycle through characters (yueer → baozi → cat → yueer).
+
+---
+
 ### 🚀 Startup Effects
 
 - Version number shown 2s after startup as alien-text `ᵛ⁰·⁵·¹` (3s duration)
