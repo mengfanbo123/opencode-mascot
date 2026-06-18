@@ -1,6 +1,6 @@
 /** @jsxImportSource @opentui/solid */
 
-import { createSignal, createEffect, onCleanup, Show } from "solid-js";
+import { createSignal, createEffect, createMemo, onCleanup, Show } from "solid-js";
 import type { JSX } from "@opentui/solid";
 import type { MascotPack, MascotState } from "../core/types";
 import { createAnimatedRenderer } from "../core/ascii-renderer";
@@ -648,6 +648,28 @@ export function SidebarMascot(props: SidebarMascotProps): JSX.Element {
   const setPosY = setGlobalPosY;
 
   const [containerWidth, setContainerWidth] = createSignal(0);
+
+  // createMemo 包装 propElement box：currentName 变化强制重算
+  // 根因：渲染层 IIFE 三元 `propElement() ? (...) : null` 在 currentName 变后
+  // reactive 依赖未迁移到新 renderer 的 activeProp → propElement 不重算 → 不显示
+  const propBoxEl = createMemo(() => {
+    const cn = currentName();
+    const r = renderers[cn];
+    if (!r) return null;
+    const propEl = r.propElement();
+    const prop = r.getProp();
+    const isPad = prop?.name === "pad";
+    if (!propEl) return null;
+    return { cn, propEl, isPad, propName: prop?.name };
+  });
+  const secondaryPropBoxEl = createMemo(() => {
+    const cn = currentName();
+    const r = renderers[cn];
+    if (!r) return null;
+    const secEl = r.secondaryPropElement();
+    if (!secEl) return null;
+    return { cn, secEl };
+  });
   let dragStartX = 0;
   let dragStartY = 0;
   let dragAnchorX = 0;
@@ -948,21 +970,21 @@ export function SidebarMascot(props: SidebarMascotProps): JSX.Element {
         log("DEBUG", `RENDER propElement: name=${cn} prop=${prop?.name} secProp=${secProp?.name} hidden=${hidden} propElNull=${!propEl}`);
         return null;
       })()}
-      {renderers[currentName()]?.propElement() ? (() => {
-        log("DEBUG", `PROP_BOX_RENDER name=${currentName()} prop=${renderers[currentName()]?.getProp()?.name}`);
-        const isPad = renderers[currentName()]?.getProp()?.name === "pad";
+      {propBoxEl() ? (() => {
+        const pb = propBoxEl()!;
+        log("DEBUG", `PROP_BOX_RENDER name=${pb.cn} prop=${pb.propName}`);
         return (
           <box
             position="absolute"
-            left={posX() + (isPad ? -1 : propOffset())}
-            top={posY() - (isPad ? 2 : 0)}
-            zIndex={globalZBoost() ? 9998 : (isPad ? 45 : 50)}
+            left={posX() + (pb.isPad ? -1 : propOffset())}
+            top={posY() - (pb.isPad ? 2 : 0)}
+            zIndex={globalZBoost() ? 9998 : (pb.isPad ? 45 : 50)}
             onMouseDown={handleMouseDown}
             onMouseDrag={handleMouseDrag}
             onMouseUp={handleMouseUp}
             onMouseDragEnd={handleMouseUp}
           >
-            {renderers[currentName()].propElement()}
+            {pb.propEl}
           </box>
         );
       })() : null}
@@ -976,14 +998,14 @@ export function SidebarMascot(props: SidebarMascotProps): JSX.Element {
           <text fg="#FFFF00">⚡💥⚡</text>
         </box>
       ) : null}
-      {renderers[currentName()]?.secondaryPropElement() ? (
+      {secondaryPropBoxEl() ? (
         <box
           position="absolute"
           left={posX() + propOffset() - 3}
           top={posY() - 5 + globalFlyOffset()}
           zIndex={globalZBoost() ? 9998 : 50}
         >
-          {renderers[currentName()].secondaryPropElement()}
+          {secondaryPropBoxEl()!.secEl}
         </box>
       ) : null}
       {globalPadVisible() ? (() => {
