@@ -238,7 +238,7 @@ const startPadSlideOut = (sid: number, onDone: () => void) => {
   }, 50);
 };
 
-const stopPhaseMachine = () => {
+export const stopPhaseMachine = () => {
   phaseSessionId++; // invalidate all in-flight callbacks
   clearAllPhaseTimeouts();
   if (phaseTimer) { clearTimeout(phaseTimer); phaseTimer = null; }

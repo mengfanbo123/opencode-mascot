@@ -5,7 +5,7 @@ import { join, dirname } from "node:path"
 import { fileURLToPath } from "node:url"
 import { createRoot, type JSX } from "solid-js"
 import { loadAllMascots } from "./src/core/mascot-loader"
-import { SidebarMascot } from "./src/components/sidebar-mascot"
+import { SidebarMascot, stopPhaseMachine } from "./src/components/sidebar-mascot"
 import { HomeMascot } from "./src/components/home-mascot"
 import { checkAndUpdate } from "./src/core/updater"
 import { emitCelebrate, emitVersion, emitScatter } from "./src/core/celebration-bus"
@@ -25,7 +25,8 @@ try {
 function MascotStatusView(props: { api: any }) {
   const theme = () => props.api.theme.current;
   return (
-    <box flexDirection="column">
+    <box gap={0}>
+      <text fg={theme()?.text} wrapMode="none">Mascot</text>
       <box flexDirection="row" gap={1}>
         <text
           flexShrink={0}
@@ -69,20 +70,21 @@ const tui: TuiPlugin = async (api, _options) => {
   const mascots = loadAllMascots()
 
   api.slots.register({
+    order: 160,
     slots: {
       sidebar_content() {
         if (!cachedSidebarElement) {
           cachedSidebarElement = createRoot((dispose) => {
             cachedSidebarDispose = dispose;
-            return (
-              <box flexDirection="column">
-                <SidebarMascot mascots={mascots} api={api} />
-                <MascotStatusView api={api} />
-              </box>
-            );
+            return <SidebarMascot mascots={mascots} api={api} />;
           });
         }
-        return cachedSidebarElement;
+        return (
+          <box flexDirection="column">
+            {cachedSidebarElement}
+            <MascotStatusView api={api} />
+          </box>
+        );
       },
       home_bottom() {
         return <HomeMascot mascots={mascots} api={api} />
@@ -99,7 +101,10 @@ const tui: TuiPlugin = async (api, _options) => {
         onSelect: () => {
           const next = !mascotVisible();
           setMascotVisible(next);
-          if (!next) setPhaseMachineOn(false);
+          if (!next) {
+            setPhaseMachineOn(false);
+            stopPhaseMachine();
+          }
           api.ui.toast({ message: `Mascot ${next ? "ON" : "OFF"}` });
         }
       },
@@ -110,6 +115,7 @@ const tui: TuiPlugin = async (api, _options) => {
         onSelect: () => {
           const next = !phaseMachineOn();
           setPhaseMachineOn(next);
+          if (!next) stopPhaseMachine();
           api.ui.toast({ message: `Easter: ${next ? "ON" : "OFF"}` });
         }
       }
