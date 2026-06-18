@@ -697,39 +697,28 @@ export function SidebarMascot(props: SidebarMascotProps): JSX.Element {
     const idx = names.indexOf(cur);
     const nextName = names[(idx + 1) % names.length];
 
-    const wasPhase = currentPhase;
-    const wasMode = phaseMode;
-
-    if (wasPhase > 0) {
-      stopPhaseMachine();
-    }
-
     const oldRenderer = renderers[cur];
     const newRenderer = renderers[nextName];
     const oldState = oldRenderer.getState();
+    const oldProp = oldRenderer.getProp();
+    const oldSecondaryProp = oldRenderer.getSecondaryProp();
+    const oldHidden = oldRenderer.getCharacterHidden();
 
     oldRenderer.setProp(null);
     oldRenderer.setSecondaryProp(null);
     oldRenderer.setCharacterHidden(false);
 
     newRenderer.setState(oldState);
-    newRenderer.setProp(null);
-    newRenderer.setSecondaryProp(null);
-    newRenderer.setCharacterHidden(false);
+    if (oldProp) {
+      newRenderer.setProp(oldProp);
+    }
+    if (oldSecondaryProp) {
+      newRenderer.setSecondaryProp(oldSecondaryProp);
+    }
+    newRenderer.setCharacterHidden(oldHidden);
 
     setCurrentName(nextName);
     setUserOverride(true);
-
-    if (wasPhase > 0 && phaseMachineOn()) {
-      // 重进相同 phase：phase callback 动态读 currentName（dfa1a52 闭包已修）
-      // setProp 打到新形象，渲染层 propElement 读新形象 prop
-      log("DEBUG", `switchToNext re-enter phase=${wasPhase} mode=${wasMode} newName=${nextName}`);
-      trackTimeout(() => {
-        if (wasPhase === 1) enterPhase1();
-        else if (wasPhase === 2) enterPhase2();
-        else if (wasPhase === 3) enterPhase3();
-      }, 100);
-    }
   };
 
   const getCw = () => containerWidth() || 30;
