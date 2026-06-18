@@ -8,6 +8,15 @@ const PURR_TEXTS = [
 ];
 const THINKING_FACES = ["o_o", "O_O", ">_o", "o_<", "⊙_⊙", "◑_◑"];
 
+// Neck lines per state — injected as a random-event animation.
+// Frames no longer carry the neck row; it is spliced in here when neckExtended.
+const NECK_LINES: Record<string, string> = {
+  default: "  > ^ <   ",
+  happy: "  > ω <   ",
+  thinking: "  > ? <   ",
+  sleeping: "  > z <   ",
+};
+
 const catEffects: MascotPack["effects"] = {
   signals: [
     { name: "tailAlt", initial: false },
@@ -17,6 +26,7 @@ const catEffects: MascotPack["effects"] = {
     { name: "purrIdx", initial: 0 },
     { name: "thinkingFaceIdx", initial: 0 },
     { name: "thinkingCountdown", initial: 0 },
+    { name: "neckExtended", initial: false },
   ],
 
   timers: [
@@ -77,6 +87,15 @@ const catEffects: MascotPack["effects"] = {
         }
       },
     },
+    {
+      interval: 7000,
+      update(ctx) {
+        if (ctx.state === "idle" && Math.random() < 0.25) {
+          ctx.set("neckExtended", true);
+          setTimeout(() => ctx.set("neckExtended", false), 1400);
+        }
+      },
+    },
   ],
 
   render(lines: string[], ctx: EffectRenderCtx): string[] {
@@ -91,9 +110,8 @@ const catEffects: MascotPack["effects"] = {
     if (dragging) {
       result[0] = "  /╲╱╲\\   ";
       result[1] = " ( >.< )  ";
-      result[2] = "  > ! <   ";
-      result[3] = " /|   |\\  ";
-      result[4] = "(_|   |_) ";
+      result[2] = " /|   |\\  ";
+      result[3] = "(_|   |_) ";
       return result;
     }
 
@@ -106,9 +124,9 @@ const catEffects: MascotPack["effects"] = {
     }
 
     if (tailAlt) {
-      result[4] = "(_|   |~) ";
+      result[3] = "(_|   |~) ";
     } else {
-      result[4] = "(_|   |_) ";
+      result[3] = "(_|   |_) ";
     }
 
     if (pupilWide) {
@@ -137,6 +155,11 @@ const catEffects: MascotPack["effects"] = {
       const idx = get("purrIdx") as number;
       const earLine = 0;
       result[earLine] = result[earLine].trimEnd() + " " + PURR_TEXTS[idx];
+    }
+
+    const neckExtended = get("neckExtended") as boolean;
+    if (neckExtended) {
+      result.splice(2, 0, NECK_LINES[state] || NECK_LINES.default);
     }
 
     return result;

@@ -1,8 +1,9 @@
 //     0123456789
+// Note: neck line (`> ^ <` etc.) removed from all frames.
+// Neck is now a random-event animation driven by catEffects (see index.ts).
 const defaultFrame = [
   "  /\\_/\\   ",
   " ( o.o )  ",
-  "  > ^ <   ",
   " /|   |\\  ",
   "(_|   |_) ",
 ];
@@ -10,7 +11,6 @@ const defaultFrame = [
 const blinkFrame = [
   "  /\\_/\\   ",
   " ( -.- )  ",
-  "  > ^ <   ",
   " /|   |\\  ",
   "(_|   |_) ",
 ];
@@ -18,7 +18,6 @@ const blinkFrame = [
 const happyFrame = [
   "  /\\_/\\   ",
   " ( ^ω^ )  ",
-  "  > ω <   ",
   " /|   |\\  ",
   "(_|   |_) ",
 ];
@@ -26,7 +25,6 @@ const happyFrame = [
 const thinkingFrame = [
   "  /\\_/\\   ",
   " ( o_o )  ",
-  "  > ? <   ",
   " /|   |\\  ",
   "(_|   |_) ",
 ];
@@ -34,7 +32,6 @@ const thinkingFrame = [
 const sleepingFrame = [
   "  /\\_/\\   ",
   " ( -.- )  ",
-  "  > z <   ",
   " /|   |\\  ",
   "(_|   |_) ",
 ];
