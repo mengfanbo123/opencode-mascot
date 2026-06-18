@@ -41,6 +41,7 @@ const [cachedSidebarEl, setCachedSidebarEl] = createSignal<JSX.Element | null>(n
 
 // 强制卸载 cachedSidebar：清 reactive scope + null 缓存，下次 sidebar_content 调用重建
 const disposeCachedSidebar = () => {
+  log("INFO", `disposeCachedSidebar ENTERED, hasDispose=${!!cachedSidebarDispose}, hasCache=${!!cachedSidebarEl()}`);
   if (cachedSidebarDispose) {
     cachedSidebarDispose();
     cachedSidebarDispose = null;
@@ -82,6 +83,7 @@ const tui: TuiPlugin = async (api, _options) => {
         value: "mascot.toggle",
         description: "Show/hide mascot character",
         onSelect: () => {
+          log("INFO", "mascot.toggle onSelect ENTERED, current visible=" + mascotVisible());
           const next = !mascotVisible();
           if (!next) {
             setMascotVisible(false);
