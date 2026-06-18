@@ -6,7 +6,7 @@ const BOT = "└" + "─".repeat(6) + "||" + "─".repeat(6) + "┘";
 const BASE = " ".repeat(4) + "▓".repeat(8) + " ".repeat(4);
 const ln = (s: string) => "│" + s.padEnd(W) + "│";
 
-const full = "█".repeat(W);
+const full = "░▒▒▓▓▓██▓▓▓▒▒░".slice(0, W).padEnd(W, "░");
 
 const frames: string[][] = [[
   TOP,
