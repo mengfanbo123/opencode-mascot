@@ -706,6 +706,13 @@ export function SidebarMascot(props: SidebarMascotProps): JSX.Element {
 
     log("DEBUG", `switchToNext: cur=${cur} next=${nextName} oldProp=${oldProp?.name} oldSec=${oldSecondaryProp?.name} oldHidden=${oldHidden} phase=${currentPhase}`);
 
+    // pad 期间双击：强制清所有 renderer 动画 timer，防 effect 帧泄漏遮盖 pad
+    if (globalPadVisible()) {
+      for (const name in renderers) {
+        renderers[name].stopAllAnimTimers();
+      }
+    }
+
     oldRenderer.setProp(null);
     oldRenderer.setSecondaryProp(null);
     oldRenderer.setCharacterHidden(false);
