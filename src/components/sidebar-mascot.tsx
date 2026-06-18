@@ -68,12 +68,6 @@ export const triggerEasterIfBusy = () => {
     trackTimeout(() => triggerEasterEgg(), 1200);
   }
 };
-
-export const triggerEasterEggNow = () => {
-  if (phaseMachineOn() && currentPhase === 0) {
-    trackTimeout(() => triggerEasterEgg(), 1200);
-  }
-};
 let globalScattered = false;
 let globalLastUserY: number | null = null;
 let globalLastUserX: number | null = null;
