@@ -441,18 +441,18 @@ const startBlackoutSequence = (sid: number) => {
   log("DEBUG", `blackout start sid=${sid} mode=${phaseMode}`);
   stopBusyPacing();
   stopVibe();
-  const flickerCount = 3 + Math.floor(Math.random() * 3); // 3-5 flickers
+  const flickerCount = 6 + Math.floor(Math.random() * 3); // 6-8 flickers（延长，看清断电过程）
   let flicker = 0;
   const doFlicker = () => {
     if (sid !== phaseSessionId) return;
     if (flicker >= flickerCount) {
-      // stage 2: sparks
+      // stage 2: sparks（延长火花展示）
       setGlobalPowerLineVisible(true);
       setGlobalSparkVisible(true);
       log("DEBUG", `blackout sparks sid=${sid}`);
       trackTimeout(() => {
         if (sid !== phaseSessionId) return;
-        // stage 3: full blackout, machine stopped
+        // stage 3: full blackout, machine stopped（机箱+显示器+电源线消失，小人保留惊恐表情）
         setGlobalSparkVisible(false);
         setGlobalPowerLineVisible(false);
         setGlobalVibeVisible(false);
@@ -463,17 +463,17 @@ const startBlackoutSequence = (sid: number) => {
         if (r) {
           r.setProp(null);
           r.setSecondaryProp(null);
-          r.setCharacterHidden(true);
+          r.setState("scared");
         }
         currentPhase = 0;
         phaseMode = "none";
-        log("DEBUG", `blackout complete sid=${sid}, machine stopped`);
-      }, 200);
+        log("DEBUG", `blackout complete sid=${sid}, machine stopped, mascot scared`);
+      }, 1200);
       return;
     }
     flicker++;
     setGlobalPowerLineVisible(flicker % 2 === 1);
-    trackTimeout(doFlicker, 100 + Math.floor(Math.random() * 50));
+    trackTimeout(doFlicker, 300 + Math.floor(Math.random() * 200));
   };
   doFlicker();
 };

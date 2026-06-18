@@ -36,10 +36,18 @@ const sleepingFrame = [
   "(_|   |_) ",
 ];
 
+const scaredFrame = [
+  "  /\\_/\\   ",
+  " ( O.O )  ",
+  " /|   |\\  ",
+  "(_|   |_) ",
+];
+
 export const frames = {
   default: defaultFrame,
   blink: blinkFrame,
   happy: happyFrame,
   thinking: thinkingFrame,
   sleeping: sleepingFrame,
+  scared: scaredFrame,
 };

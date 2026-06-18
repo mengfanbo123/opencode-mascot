@@ -22,6 +22,7 @@ const STATE_TO_FRAME: Record<MascotState, string> = {
   happy: "happy",
   thinking: "thinking",
   sleeping: "sleeping",
+  scared: "scared",
 };
 
 const DEFAULT_ANIM = {

@@ -7,7 +7,7 @@ export type ExpressionName = 'default' | 'blink' | 'happy' | 'thinking' | 'busy'
 /**
  * Current state of the mascot, determines which expression is shown.
  */
-export type MascotState = 'idle' | 'busy' | 'thinking' | 'sleeping' | 'happy';
+export type MascotState = 'idle' | 'busy' | 'thinking' | 'sleeping' | 'happy' | 'scared';
 
 /**
  * Animation timing configuration with sensible defaults.
