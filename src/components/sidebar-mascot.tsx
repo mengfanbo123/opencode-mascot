@@ -483,17 +483,23 @@ export const enterPhase3 = () => {
         if (sid !== phaseSessionId) return;
         startPadSlideOut(sid, () => {
           if (sid !== phaseSessionId) return;
-          // P3 独立 pad 彩蛋：动画结束直接恢复 busy，不调 blackout（blackout 是 P1+P2 流程）
-          r.setProp(null);
-          r.setSecondaryProp(null);
+          // P3 独立 pad 彩蛋：动画结束直接恢复 busy，不调 blackout
+          // 动态读当前形象 renderer（pad 期间可能双击切形象，r 闭包过期）
+          const cur = singletonRenderers?.[globalCurrentName()];
+          if (cur) {
+            cur.setProp(null);
+            cur.setSecondaryProp(null);
+            cur.setCharacterHidden(false);
+          }
           setGlobalPosY(Math.max(10, globalPosY() - 10));
-          r.setCharacterHidden(false);
           fallToWorkY();
           currentPhase = 0;
           phaseMode = "none";
-          r.setState("busy");
+          if (cur) {
+            cur.setState("busy");
+          }
           startBusyPacing();
-          log("DEBUG", `phase3 pad done sid=${sid}, resume busy`);
+          log("DEBUG", `phase3 pad done sid=${sid}, resume busy on ${globalCurrentName()}`);
         });
       }, 30000);
     });
