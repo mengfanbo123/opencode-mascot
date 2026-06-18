@@ -5,7 +5,7 @@ import { join, dirname } from "node:path"
 import { fileURLToPath } from "node:url"
 import { createRoot, createSignal, type JSX } from "solid-js"
 import { loadAllMascots } from "./src/core/mascot-loader"
-import { SidebarMascot, stopPhaseMachine, showMascotPosition, resetLastBusySessionId, triggerEasterIfBusy, resumeBusyState, resetSingletonRenderers } from "./src/components/sidebar-mascot"
+import { SidebarMascot, stopPhaseMachine, fallToWorkY, resetLastBusySessionId, triggerEasterIfBusy, resumeBusyState, resetSingletonRenderers } from "./src/components/sidebar-mascot"
 import { HomeMascot, hideHomeMascotPosition } from "./src/components/home-mascot"
 import { checkAndUpdate } from "./src/core/updater"
 import { emitCelebrate, emitVersion, emitScatter } from "./src/core/celebration-bus"
@@ -98,14 +98,17 @@ const tui: TuiPlugin = async (api, _options) => {
             log("INFO", "mascot.toggle OFF: cache disposed, sidebar_content returns null next");
           } else {
             // toggle on：forceRebuild 自增触发 sidebar_content 重渲染
-            // cachedSidebarEl 已是 null（toggle off dispose 后），setNull 无变化
+            // busy 时用 fallToWorkY 掉落到工作位置(5,30)而非 idle 默认(20,2)
+            // 延迟 triggerEasterIfBusy 等新 mount 完成再触发彩蛋
             setMascotVisible(true);
             setPhaseMachineOn(true);
-            showMascotPosition();
             disposeCachedSidebar();
             setForceRebuild(forceRebuild() + 1);
+            resetLastBusySessionId();
             resumeBusyState();
-            log("INFO", "mascot.toggle ON: forceRebuild++, slot will rebuild");
+            fallToWorkY();
+            setTimeout(() => triggerEasterIfBusy(), 1500);
+            log("INFO", "mascot.toggle ON: forceRebuild++, fallToWorkY, easter trigger scheduled");
           }
           api.ui.toast({ message: `Mascot ${next ? "ON" : "OFF"}` });
         }

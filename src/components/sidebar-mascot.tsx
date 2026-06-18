@@ -117,7 +117,7 @@ export const showMascotPosition = () => {
 };
 let globalFallTimer: ReturnType<typeof setInterval> | null = null;
 
-const fallToWorkY = () => {
+export const fallToWorkY = () => {
   const targetY = globalLastUserY ?? 30;
   const targetX = globalLastUserX ?? 5;
   const startY = globalPosY();
