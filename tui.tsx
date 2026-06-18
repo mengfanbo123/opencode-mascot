@@ -91,18 +91,13 @@ const tui: TuiPlugin = async (api, _options) => {
         }
       },
       {
-        title: "Mascot: Toggle power (Phase Machine)",
-        value: "mascot.power",
-        description: "Turn Phase Machine on/off (requires mascot visible)",
-        enabled: mascotVisible(),
+        title: "Mascot: Toggle Easter eggs",
+        value: "mascot.easter",
+        description: "Turn Phase Machine on/off",
         onSelect: () => {
-          if (!mascotVisible()) {
-            api.ui.toast({ message: "Enable mascot first" });
-            return;
-          }
           const next = !phaseMachineOn();
           setPhaseMachineOn(next);
-          api.ui.toast({ message: `Power ${next ? "ON" : "OFF"}` });
+          api.ui.toast({ message: `Easter: ${next ? "ON" : "OFF"}` });
         }
       }
     ])
