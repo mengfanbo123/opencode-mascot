@@ -935,6 +935,14 @@ export function SidebarMascot(props: SidebarMascotProps): JSX.Element {
             ))}
           </box>
         ) : null}
+      {(() => {
+        const cn = currentName();
+        const prop = renderers[cn]?.getProp();
+        const secProp = renderers[cn]?.getSecondaryProp();
+        const hidden = renderers[cn]?.getCharacterHidden();
+        log("DEBUG", `RENDER propElement: name=${cn} prop=${prop?.name} secProp=${secProp?.name} hidden=${hidden}`);
+        return null;
+      })()}
       {renderers[currentName()]?.propElement() ? (() => {
         const isPad = renderers[currentName()]?.getProp()?.name === "pad";
         return (
