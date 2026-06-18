@@ -64,6 +64,18 @@ let lastBusySessionId: string | null = null;
 let globalScattered = false;
 let globalLastUserY: number | null = null;
 let globalLastUserX: number | null = null;
+// toggle off 移屏（命令式）：createEffect 在 createRoot 隔离 scope 内不响应模块级 signal，
+// 由 tui.tsx handler 直接调。opentui 必响应 position 变化（小人靠 position 动）。
+export const hideMascotPosition = () => {
+  if (globalLastUserX === null) globalLastUserX = globalPosX();
+  if (globalLastUserY === null) globalLastUserY = globalPosY();
+  setGlobalPosX(-1000);
+  setGlobalPosY(-1000);
+};
+export const showMascotPosition = () => {
+  if (globalLastUserX !== null) { setGlobalPosX(globalLastUserX); globalLastUserX = null; }
+  if (globalLastUserY !== null) { setGlobalPosY(globalLastUserY); globalLastUserY = null; }
+};
 let globalFallTimer: ReturnType<typeof setInterval> | null = null;
 
 const fallToWorkY = () => {
@@ -573,20 +585,8 @@ export function SidebarMascot(props: SidebarMascotProps): JSX.Element {
     }
   });
 
-  // toggle off 移出屏幕：opentui 不移除 native 节点（reconciler bug #733/#680），
-  // 但必响应 position 变化。移 posX/Y 到 -1000，小人+所有 props 跟随移出屏幕。
-  // on 时恢复 last position。
-  createEffect(() => {
-    if (!mascotVisible()) {
-      if (globalLastUserX === null) globalLastUserX = globalPosX();
-      if (globalLastUserY === null) globalLastUserY = globalPosY();
-      setGlobalPosX(-1000);
-      setGlobalPosY(-1000);
-    } else {
-      if (globalLastUserX !== null) { setGlobalPosX(globalLastUserX); globalLastUserX = null; }
-      if (globalLastUserY !== null) { setGlobalPosY(globalLastUserY); globalLastUserY = null; }
-    }
-  });
+
+
 
   const switchToNext = () => {
     const cur = currentName();
