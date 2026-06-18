@@ -38,6 +38,10 @@ try {
 // ==========================================================================
 let cachedSidebarDispose: (() => void) | null = null;
 const [cachedSidebarEl, setCachedSidebarEl] = createSignal<JSX.Element | null>(null);
+// sidebar_content slot reactive 只追踪 cachedSidebarEl。
+// toggle on 时 cachedSidebarEl 已是 null（toggle off dispose 后），setNull 无变化不触发重渲染。
+// forceRebuild 计数 signal：toggle on 自增，sidebar_content 读它建立依赖 → 强制重渲染。
+const [forceRebuild, setForceRebuild] = createSignal(0);
 
 // 强制卸载 cachedSidebar：清 reactive scope + null 缓存，下次 sidebar_content 调用重建
 const disposeCachedSidebar = () => {
@@ -56,18 +60,16 @@ const tui: TuiPlugin = async (api, _options) => {
     order: 160,
     slots: {
       sidebar_content() {
+        // 读 forceRebuild 建立 reactive 依赖：toggle on 自增时强制重渲染 slot
+        forceRebuild();
         log("DEBUG", `sidebar_content called, hasCache=${!!cachedSidebarEl()}, visible=${mascotVisible()}`);
         if (mascotVisible() && !cachedSidebarEl()) {
-          // 重建前 reset renderer：避免复用绑已 dispose scope 的旧 renderer → native 孤儿
           resetSingletonRenderers();
           setCachedSidebarEl(createRoot((dispose) => {
             cachedSidebarDispose = dispose;
             return <SidebarMascot mascots={mascots} api={api} />;
           }));
         }
-        // 不用 Show：opentui reconciler 对 Show fallback 的空 box measure function 冲突
-        // toggle off 时 disposeCachedSidebar 清 cache → slot 返回 null → 真正 unmount
-        // toggle on 时 cachedSidebarEl 为 null → 下次 slot 调用重建
         return cachedSidebarEl() ?? null;
       },
       home_bottom() {
@@ -95,14 +97,15 @@ const tui: TuiPlugin = async (api, _options) => {
             disposeCachedSidebar();
             log("INFO", "mascot.toggle OFF: cache disposed, sidebar_content returns null next");
           } else {
-            // toggle on：setMascotVisible + dispose cache 触发 opencode 重渲染 slot
-            // sidebar_content 检测 visible + cache=null → 重建 createRoot + 新 renderer
+            // toggle on：forceRebuild 自增触发 sidebar_content 重渲染
+            // cachedSidebarEl 已是 null（toggle off dispose 后），setNull 无变化
             setMascotVisible(true);
             setPhaseMachineOn(true);
             showMascotPosition();
             disposeCachedSidebar();
+            setForceRebuild(forceRebuild() + 1);
             resumeBusyState();
-            log("INFO", "mascot.toggle ON: visible + cache cleared, slot will rebuild");
+            log("INFO", "mascot.toggle ON: forceRebuild++, slot will rebuild");
           }
           api.ui.toast({ message: `Mascot ${next ? "ON" : "OFF"}` });
         }
