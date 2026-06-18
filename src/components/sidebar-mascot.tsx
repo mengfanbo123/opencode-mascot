@@ -708,8 +708,8 @@ export function SidebarMascot(props: SidebarMascotProps): JSX.Element {
 
     if (inPhase) {
       newRenderer.setState(oldState);
-      newRenderer.setProp(oldRenderer.getProp());
-      newRenderer.setSecondaryProp(oldRenderer.getSecondaryProp());
+      newRenderer.syncPropFromRenderer(oldRenderer);
+      newRenderer.syncSecondaryPropFromRenderer(oldRenderer);
       newRenderer.setCharacterHidden(oldRenderer.getCharacterHidden());
     } else {
       newRenderer.setState(oldState);

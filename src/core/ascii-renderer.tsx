@@ -70,6 +70,9 @@ export function createAnimatedRenderer(pack: MascotPack): {
   setSecondaryProp: (prop: PropPack | null) => void;
   getProp: () => PropPack | null;
   getSecondaryProp: () => PropPack | null;
+  // syncPropFromRenderer: 切形象时从旧形象复制 prop 状态（不 randomize propPosition）
+  syncPropFromRenderer: (src: { getProp: () => PropPack | null; getPropPosition: () => PropPosition | null }) => void;
+  syncSecondaryPropFromRenderer: (src: { getSecondaryProp: () => PropPack | null }) => void;
   setExtra: (name: string, value: unknown) => void;
   stopAllAnimTimers: () => void;
   destroy: () => void;
@@ -875,5 +878,47 @@ export function createAnimatedRenderer(pack: MascotPack): {
 
   const getProp = () => activeProp();
 
-  return { element, propElement, secondaryPropElement, getPropPosition: () => propPosition(), getCharacterHidden: () => characterHidden(), getState: currentState, setState, toggleWalk, setDragging, setCharacterHidden, celebrateUpdate, bounce, bounceSafe, showVersion, scatterIn, explode, fallApart, setProp, getProp, setSecondaryProp, getSecondaryProp, setExtra, stopAllAnimTimers: stopAllAnimations, destroy };
+  const syncPropFromRenderer = (src: { getProp: () => PropPack | null; getPropPosition: () => PropPosition | null }) => {
+    const prop = src.getProp();
+    const pos = src.getPropPosition();
+    stopPropTimer();
+    setActiveProp(prop);
+    if (prop && pos) {
+      setPropPosition(pos);
+      setPropFrameIdx(0);
+      if (Array.isArray(prop.frames[0]) && prop.frameInterval) {
+        const totalFrames = (prop.frames as string[][]).length;
+        const randomize = prop.name === "laptop";
+        propTimer = setInterval(() => {
+          if (randomize) {
+            setPropFrameIdx(Math.floor(Math.random() * totalFrames));
+          } else {
+            setPropFrameIdx((idx) => (idx + 1) % totalFrames);
+          }
+        }, prop.frameInterval);
+      }
+    } else {
+      setPropPosition(null);
+    }
+  };
+
+  const syncSecondaryPropFromRenderer = (src: { getSecondaryProp: () => PropPack | null }) => {
+    const prop = src.getSecondaryProp();
+    stopSecondaryPropTimer();
+    setSecondaryPropSignal(prop);
+    setSecondaryPropFrameIdx(0);
+    if (prop && Array.isArray(prop.frames[0]) && prop.frameInterval) {
+      const totalFrames = (prop.frames as string[][]).length;
+      const randomize = prop.name === "laptop";
+      secondaryPropTimer = setInterval(() => {
+        if (randomize) {
+          setSecondaryPropFrameIdx(Math.floor(Math.random() * totalFrames));
+        } else {
+          setSecondaryPropFrameIdx((idx) => (idx + 1) % totalFrames);
+        }
+      }, prop.frameInterval);
+    }
+  };
+
+  return { element, propElement, secondaryPropElement, getPropPosition: () => propPosition(), getCharacterHidden: () => characterHidden(), getState: currentState, setState, toggleWalk, setDragging, setCharacterHidden, celebrateUpdate, bounce, bounceSafe, showVersion, scatterIn, explode, fallApart, setProp, getProp, setSecondaryProp, getSecondaryProp, syncPropFromRenderer, syncSecondaryPropFromRenderer, setExtra, stopAllAnimTimers: stopAllAnimations, destroy };
 }
