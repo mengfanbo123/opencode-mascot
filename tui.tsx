@@ -5,8 +5,8 @@ import { join, dirname } from "node:path"
 import { fileURLToPath } from "node:url"
 import { createRoot, Show, type JSX } from "solid-js"
 import { loadAllMascots } from "./src/core/mascot-loader"
-import { SidebarMascot, stopPhaseMachine, hideMascotPosition, showMascotPosition, resetLastBusySessionId, triggerEasterIfBusy, resumeBusyState } from "./src/components/sidebar-mascot"
-import { HomeMascot, hideHomeMascotPosition, showHomeMascotPosition } from "./src/components/home-mascot"
+import { SidebarMascot, stopPhaseMachine, hideMascotPosition, resetLastBusySessionId, triggerEasterIfBusy, resumeBusyState } from "./src/components/sidebar-mascot"
+import { HomeMascot, hideHomeMascotPosition } from "./src/components/home-mascot"
 import { checkAndUpdate } from "./src/core/updater"
 import { emitCelebrate, emitVersion, emitScatter } from "./src/core/celebration-bus"
 import { mascotVisible, setMascotVisible, phaseMachineOn, setPhaseMachineOn } from "./src/core/mascot-state"
@@ -81,19 +81,24 @@ const tui: TuiPlugin = async (api, _options) => {
         description: "Show/hide mascot character",
         onSelect: () => {
           const next = !mascotVisible();
-          setMascotVisible(next);
           if (!next) {
+            setMascotVisible(false);
             setPhaseMachineOn(false);
             stopPhaseMachine();
             hideMascotPosition();
             hideHomeMascotPosition();
             log("INFO", "mascot.toggle OFF: phase stopped, position moved offscreen");
           } else {
+            // dispose 旧 createRoot（reactive scope 已损坏），recreate 新 SidebarMascot
+            disposeCachedSidebar();
+            cachedSidebarElement = createRoot((dispose) => {
+              cachedSidebarDispose = dispose;
+              return <SidebarMascot mascots={mascots} api={api} />;
+            });
+            setMascotVisible(true);
             setPhaseMachineOn(true);
-            showMascotPosition();
-            showHomeMascotPosition();
             resumeBusyState();
-            log("INFO", "mascot.toggle ON: position restored, busy state resumed");
+            log("INFO", "mascot.toggle ON: createRoot recreated (fresh reactive scope), busy state resumed");
           }
           api.ui.toast({ message: `Mascot ${next ? "ON" : "OFF"}` });
         }
