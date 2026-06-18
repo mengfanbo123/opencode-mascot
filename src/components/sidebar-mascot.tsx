@@ -93,11 +93,12 @@ export const hideMascotPosition = () => {
 export const showMascotPosition = () => {
   const restoreX = globalLastUserX ?? 20;
   const restoreY = globalLastUserY ?? 2;
+  log("DEBUG", `showMascotPosition: restore from saved(${globalLastUserX},${globalLastUserY}) to (${restoreX},${restoreY})`);
   setGlobalPosX(restoreX);
   setGlobalPosY(restoreY);
+  log("DEBUG", `showMascotPosition: after set, globalPosX=${globalPosX()}, globalPosY=${globalPosY()}, mascotVisible check next`);
   globalLastUserX = null;
   globalLastUserY = null;
-  log("DEBUG", `showMascotPosition: restored to (${restoreX},${restoreY}), globalLastUser was (${globalLastUserX},${globalLastUserY})`);
 };
 let globalFallTimer: ReturnType<typeof setInterval> | null = null;
 
