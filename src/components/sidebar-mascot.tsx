@@ -61,16 +61,17 @@ let padSlideTimer: ReturnType<typeof setInterval> | null = null;
 let padFrameTimer: ReturnType<typeof setInterval> | null = null;
 let vibeTimer: ReturnType<typeof setInterval> | null = null;
 let lastBusySessionId: string | null = null;
+let currentSessionStatus: string = "idle";
 export const resetLastBusySessionId = () => { lastBusySessionId = null; };
 
 export const triggerEasterIfBusy = () => {
-  if (lastBusySessionId !== null && phaseMachineOn()) {
+  if (currentSessionStatus === "busy" && phaseMachineOn()) {
     trackTimeout(() => triggerEasterEgg(), 1200);
   }
 };
 
 export const resumeBusyState = () => {
-  if (lastBusySessionId !== null) {
+  if (currentSessionStatus === "busy") {
     const r = singletonRenderers?.[globalCurrentName()];
     if (r) {
       r.setState("busy");
@@ -712,6 +713,7 @@ export function SidebarMascot(props: SidebarMascotProps): JSX.Element {
       const statusType = payload?.properties?.status?.type;
       log("DEBUG", `session.status: statusType=${statusType}`);
       if (statusType === "busy" || statusType === "retry") {
+        currentSessionStatus = "busy";
         renderers[globalCurrentName()].setState("busy");
         const sessionId = payload?.properties?.sessionID ?? null;
         if (sessionId !== lastBusySessionId) {
@@ -730,6 +732,7 @@ export function SidebarMascot(props: SidebarMascotProps): JSX.Element {
           }
         }
       } else {
+        currentSessionStatus = "idle";
         renderers[globalCurrentName()].setState("idle");
         stopBusyPacing();
         stopPhaseMachine();
