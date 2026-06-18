@@ -722,30 +722,30 @@ export function SidebarMascot(props: SidebarMascotProps): JSX.Element {
     setCurrentName(nextName);
     setUserOverride(true);
 
-    // 梯子+电源线+vibe+pad 同步闪：forceSidebarRebuild dispose 重建时机箱/显示器闪，
-    // 需同步消失再显示，否则空档期视觉不一致/左闪抖动/角色遮盖 pad
-    const wasRope = globalRopeVisible();
-    const wasPowerLine = globalPowerLineVisible();
-    const wasVibe = globalVibeVisible();
     const wasPad = globalPadVisible();
-    if (wasRope) {
-      setGlobalRopeVisible(false);
-      trackTimeout(() => setGlobalRopeVisible(true), 300);
-    }
-    if (wasPowerLine) {
-      setGlobalPowerLineVisible(false);
-      trackTimeout(() => setGlobalPowerLineVisible(true), 300);
-    }
-    if (wasVibe) {
-      setGlobalVibeVisible(false);
-      trackTimeout(() => setGlobalVibeVisible(true), 300);
-    }
     if (wasPad) {
-      setGlobalPadVisible(false);
-      trackTimeout(() => setGlobalPadVisible(true), 300);
+      // pad 期间：pad 渲染层读 currentName() 自动切 frames，不 forceSidebarRebuild
+      // 避免角色重挂闪动遮盖 pad
+      log("DEBUG", `switchToNext in pad: skip rebuild, pad frames auto-switch`);
+    } else {
+      // 非pad：梯子+电源线+vibe 同步闪 + forceSidebarRebuild 重挂渲染层
+      const wasRope = globalRopeVisible();
+      const wasPowerLine = globalPowerLineVisible();
+      const wasVibe = globalVibeVisible();
+      if (wasRope) {
+        setGlobalRopeVisible(false);
+        trackTimeout(() => setGlobalRopeVisible(true), 300);
+      }
+      if (wasPowerLine) {
+        setGlobalPowerLineVisible(false);
+        trackTimeout(() => setGlobalPowerLineVisible(true), 300);
+      }
+      if (wasVibe) {
+        setGlobalVibeVisible(false);
+        trackTimeout(() => setGlobalVibeVisible(true), 300);
+      }
+      setForceSidebarRebuild(forceSidebarRebuild() + 1);
     }
-
-    setForceSidebarRebuild(forceSidebarRebuild() + 1);
 
     log("DEBUG", `switchToNext done: newProp=${newRenderer.getProp()?.name} newSec=${newRenderer.getSecondaryProp()?.name} newHidden=${newRenderer.getCharacterHidden()}`);
   };
@@ -1005,6 +1005,7 @@ export function SidebarMascot(props: SidebarMascotProps): JSX.Element {
         </box>
       ) : null}
       {globalPadVisible() ? (() => {
+        currentName(); // reactive 依赖：切形象后 pad frames 重新读
         const pad = getProp("pad");
         if (!pad) return null;
         const fg = props.mascots[currentName()]?.colors?.defaultFg || undefined;
