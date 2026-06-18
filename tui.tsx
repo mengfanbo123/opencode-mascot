@@ -3,7 +3,7 @@ import type { TuiPlugin, TuiPluginModule } from "@opencode-ai/plugin/tui"
 import { readFileSync } from "node:fs"
 import { join, dirname } from "node:path"
 import { fileURLToPath } from "node:url"
-import { createRoot, Show, type JSX } from "solid-js"
+import { createRoot, createSignal, Show, type JSX } from "solid-js"
 import { loadAllMascots } from "./src/core/mascot-loader"
 import { SidebarMascot, stopPhaseMachine, hideMascotPosition, resetLastBusySessionId, triggerEasterIfBusy, resumeBusyState } from "./src/components/sidebar-mascot"
 import { HomeMascot, hideHomeMascotPosition } from "./src/components/home-mascot"
@@ -33,16 +33,15 @@ try {
 // 数据: mount 从 1380 次/2分钟 → 1 次（2026-06-17 独立 demo 验证）
 // ⚠️ 月儿 2026-06-17 曾误删此缓存导致 mount 风暴回归，禁止再删 ⚠️
 // ==========================================================================
-let cachedSidebarElement: JSX.Element | null = null;
 let cachedSidebarDispose: (() => void) | null = null;
+const [cachedSidebarEl, setCachedSidebarEl] = createSignal<JSX.Element | null>(null);
 
 // 强制卸载 cachedSidebar：清 reactive scope + null 缓存，下次 sidebar_content 调用重建
-// 用途：toggle off 时立刻消失（<Show> 在 createRoot 隔离 scope 内不响应，靠 dispose 强制清 native 节点）
 const disposeCachedSidebar = () => {
   if (cachedSidebarDispose) {
     cachedSidebarDispose();
     cachedSidebarDispose = null;
-    cachedSidebarElement = null;
+    setCachedSidebarEl(null);
   }
 };
 
