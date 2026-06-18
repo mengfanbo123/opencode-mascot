@@ -3,7 +3,7 @@ import type { TuiPlugin, TuiPluginModule } from "@opencode-ai/plugin/tui"
 import { readFileSync } from "node:fs"
 import { join, dirname } from "node:path"
 import { fileURLToPath } from "node:url"
-import { createRoot, type JSX } from "solid-js"
+import { createRoot, Show, type JSX } from "solid-js"
 import { loadAllMascots } from "./src/core/mascot-loader"
 import { SidebarMascot, stopPhaseMachine } from "./src/components/sidebar-mascot"
 import { HomeMascot } from "./src/components/home-mascot"
@@ -58,7 +58,13 @@ const tui: TuiPlugin = async (api, _options) => {
             return <SidebarMascot mascots={mascots} api={api} />;
           });
         }
-        return cachedSidebarElement;
+        // Show 在 createRoot 外控制显隐：toggle off 立刻隐藏，on 立刻显示
+        // createRoot 内 SidebarMascot 保留（堵 mount 风暴），Show 只切可见性
+        return (
+          <Show when={mascotVisible()} fallback={<></>}>
+            {cachedSidebarElement}
+          </Show>
+        );
       },
       home_bottom() {
         return <HomeMascot mascots={mascots} api={api} />
