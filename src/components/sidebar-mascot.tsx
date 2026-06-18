@@ -91,8 +91,13 @@ export const hideMascotPosition = () => {
   setGlobalPosY(-1000);
 };
 export const showMascotPosition = () => {
-  if (globalLastUserX !== null) { setGlobalPosX(globalLastUserX); globalLastUserX = null; }
-  if (globalLastUserY !== null) { setGlobalPosY(globalLastUserY); globalLastUserY = null; }
+  const restoreX = globalLastUserX ?? 20;
+  const restoreY = globalLastUserY ?? 2;
+  setGlobalPosX(restoreX);
+  setGlobalPosY(restoreY);
+  globalLastUserX = null;
+  globalLastUserY = null;
+  log("DEBUG", `showMascotPosition: restored to (${restoreX},${restoreY}), globalLastUser was (${globalLastUserX},${globalLastUserY})`);
 };
 let globalFallTimer: ReturnType<typeof setInterval> | null = null;
 
