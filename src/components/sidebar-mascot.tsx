@@ -38,6 +38,23 @@ const EDGE_THRESHOLD = 3;
 let singletonRenderers: Record<string, ReturnType<typeof createAnimatedRenderer>> | null = null;
 let singletonListener = false;
 let singletonUnsubs: (() => void)[] = [];
+
+// resetSingletonRenderers: dispose 旧 renderer（signal/computation 绑在旧 createRoot scope）
+// toggle on dispose+recreate createRoot 时必须调用，否则新 SidebarMascot 复用旧 renderer
+// → 旧 renderer.element() 的 reactive 断裂 → native 节点孤儿 → 不显示
+export const resetSingletonRenderers = () => {
+  if (singletonRenderers) {
+    for (const name in singletonRenderers) {
+      try { singletonRenderers[name].destroy(); } catch {}
+    }
+    singletonRenderers = null;
+  }
+  for (const unsub of singletonUnsubs) {
+    try { unsub(); } catch {}
+  }
+  singletonUnsubs = [];
+  singletonListener = false;
+};
 const [globalUserOverride, setGlobalUserOverride] = createSignal(false);
 const [globalPosX, setGlobalPosX] = createSignal(20);
 const [globalPosY, setGlobalPosY] = createSignal(2);

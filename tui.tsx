@@ -5,7 +5,7 @@ import { join, dirname } from "node:path"
 import { fileURLToPath } from "node:url"
 import { createRoot, createSignal, Show, type JSX } from "solid-js"
 import { loadAllMascots } from "./src/core/mascot-loader"
-import { SidebarMascot, stopPhaseMachine, hideMascotPosition, resetLastBusySessionId, triggerEasterIfBusy, resumeBusyState } from "./src/components/sidebar-mascot"
+import { SidebarMascot, stopPhaseMachine, hideMascotPosition, resetLastBusySessionId, triggerEasterIfBusy, resumeBusyState, resetSingletonRenderers } from "./src/components/sidebar-mascot"
 import { HomeMascot, hideHomeMascotPosition } from "./src/components/home-mascot"
 import { checkAndUpdate } from "./src/core/updater"
 import { emitCelebrate, emitVersion, emitScatter } from "./src/core/celebration-bus"
@@ -94,7 +94,9 @@ const tui: TuiPlugin = async (api, _options) => {
             log("INFO", "mascot.toggle OFF: phase stopped, position moved offscreen");
           } else {
             // dispose 旧 createRoot（reactive scope 已损坏），recreate 新 SidebarMascot
+            // resetSingletonRenderers 清旧 renderer（native 节点绑旧 scope），否则新 mount 复用旧 renderer → 不显示
             disposeCachedSidebar();
+            resetSingletonRenderers();
             setCachedSidebarEl(createRoot((dispose) => {
               cachedSidebarDispose = dispose;
               return <SidebarMascot mascots={mascots} api={api} />;
