@@ -1,6 +1,6 @@
 /** @jsxImportSource @opentui/solid */
 
-import { createSignal, createMemo, onCleanup } from "solid-js";
+import { createSignal, onCleanup } from "solid-js";
 import type { JSX } from "@opentui/solid";
 import type { MascotPack, MascotState, EffectTimerCtx, EffectRenderCtx, PropPack, PropPosition } from "./types";
 import { emitPropShow } from "./celebration-bus";
@@ -375,10 +375,33 @@ export function createAnimatedRenderer(pack: MascotPack): {
   const PERF_FAST_MS = 30;
   const perfStart = Date.now();
 
+  // 内存采样：每2秒记录heapUsed，卡死时日志有增长曲线
+  let memLastLogged = 0;
+  const memSampleTimer = setInterval(() => {
+    const mu = process.memoryUsage();
+    const heapMB = Math.round(mu.heapUsed / 1024 / 1024);
+    const delta = heapMB - memLastLogged;
+    if (Math.abs(delta) >= 5 || (Date.now() - perfStart > 60000 && heapMB > 150)) {
+      log("WARN", `mem sample: heap=${heapMB}MB delta=${delta >= 0 ? "+" : ""}${delta} rss=${Math.round(mu.rss / 1024 / 1024)}MB`);
+      memLastLogged = heapMB;
+    }
+  }, 2000);
+
   const perfGuardTimer = setInterval(() => {
     if (Date.now() - perfStart < 5000) return; // 5s warmup
     const t0 = Date.now();
-    memoizedLines();
+    const frameName = frameOverride() ?? STATE_TO_FRAME[currentState()] ?? "default";
+    const rawLines = getFrameLines(pack, frameName);
+    if (effects?.render) {
+      effects.render(rawLines, {
+        state: currentState(),
+        frameName,
+        breathPhase: breathPhase(),
+        jumpOffset: jumpOffset(),
+        dragging: dragging(),
+        get: getExtra,
+      });
+    }
     const elapsed = Date.now() - t0;
     if (elapsed > PERF_SLOW_MS) {
       perfSlowStreak++;
@@ -405,6 +428,8 @@ export function createAnimatedRenderer(pack: MascotPack): {
   }, 1000);
 
   // ─── Cleanup ───
+  // 单例设计：onCleanup不清持续timer（v0.8.3设计），跨重挂载保持
+  // 只清一次性效果timer + session级动画timer
   onCleanup(() => {
     stopFlash();
     stopDragMsg();
@@ -421,13 +446,6 @@ export function createAnimatedRenderer(pack: MascotPack): {
     if (idleSleepTimeout) { clearTimeout(idleSleepTimeout); idleSleepTimeout = null; }
     if (idlePadTimeout) { clearTimeout(idlePadTimeout); idlePadTimeout = null; }
     if (idleBoxTimeout) { clearTimeout(idleBoxTimeout); idleBoxTimeout = null; }
-    if (blinkTimer) clearInterval(blinkTimer);
-    if (expressionTimer) clearInterval(expressionTimer);
-    if (breathTimer) clearInterval(breathTimer);
-    if (walkTimeout) clearTimeout(walkTimeout);
-    if (jumpTimeout) clearTimeout(jumpTimeout);
-    if (perfGuardTimer) clearInterval(perfGuardTimer);
-    for (const t of effectTimers) clearInterval(t);
   });
 
   const destroy = () => {
@@ -452,26 +470,37 @@ export function createAnimatedRenderer(pack: MascotPack): {
     if (walkTimeout) clearTimeout(walkTimeout);
     if (jumpTimeout) clearTimeout(jumpTimeout);
     if (perfGuardTimer) clearInterval(perfGuardTimer);
+    if (memSampleTimer) clearInterval(memSampleTimer);
     for (const t of effectTimers) clearInterval(t);
   };
 
   // ─── Render ───
-  // B2+B3: memo化lines，flashColor不触发lines重建（只改fg属性）
-  const memoizedLines = createMemo(() => {
+  const element = () => {
     breathPhase();
     walkOffset();
+    jumpOffset();
     frameOverride();
     currentState();
-    characterHidden();
-    propPosition();
-    scatter();
     dragging();
+    celebrate();
+    flashColor();
+    dragMsg();
+    zzz();
+    scatter();
+    bomb();
+    versionMsg();
+    characterHidden();
+    activeProp();
+    propPosition();
+
     for (const [, [get]] of extraSignals) {
       get();
     }
 
     const frameName = frameOverride() ?? STATE_TO_FRAME[currentState()] ?? "default";
     const rawLines = getFrameLines(pack, frameName);
+    const offset = walkOffset();
+
     const width = rawLines[0]?.length ?? 10;
     const blank = " ".repeat(width);
 
@@ -497,20 +526,7 @@ export function createAnimatedRenderer(pack: MascotPack): {
         };
       lines = effects.render(lines, renderCtx);
     }
-    return lines;
-  });
 
-  const element = () => {
-    // flashColor不再追踪——JSX fg属性绑定，solid fine-grained只更新DOM属性不重建节点
-    jumpOffset();
-    celebrate();
-    dragMsg();
-    zzz();
-    bomb();
-    versionMsg();
-
-    const lines = memoizedLines();
-    const offset = walkOffset();
     const top = jumpOffset();
     const left = offset > 0 ? offset : 0;
     const cel = celebrate();
@@ -537,7 +553,7 @@ export function createAnimatedRenderer(pack: MascotPack): {
     );
   };
 
-  const propLines = createMemo(() => {
+  const propElement = () => {
     activeProp();
     propFrameIdx();
     const prop = activeProp();
@@ -546,23 +562,18 @@ export function createAnimatedRenderer(pack: MascotPack): {
     const propFramesRaw = Array.isArray(prop.frames[0])
       ? (prop.frames as string[][])
       : [prop.frames as string[]];
-    return propFramesRaw[propFrameIdx() % propFramesRaw.length] ?? propFramesRaw[0];
-  });
-
-  const propElement = () => {
-    const propLinesData = propLines();
-    if (!propLinesData) return null;
+    const propLines = propFramesRaw[propFrameIdx() % propFramesRaw.length] ?? propFramesRaw[0];
 
     return (
       <box flexDirection="column" alignItems="flex-start">
-        {propLinesData.map((line: string) => (
+        {propLines.map((line: string) => (
           <text fg={fg}>{line}</text>
         ))}
       </box>
     );
   };
 
-  const secondaryPropLines = createMemo(() => {
+  const secondaryPropElement = () => {
     secondaryProp();
     secondaryPropFrameIdx();
     const prop = secondaryProp();
@@ -571,16 +582,11 @@ export function createAnimatedRenderer(pack: MascotPack): {
     const propFramesRaw = Array.isArray(prop.frames[0])
       ? (prop.frames as string[][])
       : [prop.frames as string[]];
-    return propFramesRaw[secondaryPropFrameIdx() % propFramesRaw.length] ?? propFramesRaw[0];
-  });
-
-  const secondaryPropElement = () => {
-    const propLinesData = secondaryPropLines();
-    if (!propLinesData) return null;
+    const propLines = propFramesRaw[secondaryPropFrameIdx() % propFramesRaw.length] ?? propFramesRaw[0];
 
     return (
       <box flexDirection="column" alignItems="flex-start">
-        {propLinesData.map((line: string) => (
+        {propLines.map((line: string) => (
           <text fg={fg}>{line}</text>
         ))}
       </box>

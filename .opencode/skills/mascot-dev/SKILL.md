@@ -78,6 +78,41 @@ codegraph sync
 3. 测试满意后按发版流程发版
 4. **发版后恢复 tui.json 回线上引用**：`@mingxy/opencode-mascot@latest`
 
+### 测试流程（师尊说"测试"时自动执行）
+
+师尊说"测试"/"测一下"/"看看效果"时，月儿自动执行：
+
+```bash
+# 1. 记录基线（T0）
+echo "=== T0 $(date '+%H:%M:%S') ===" 
+rtk tail -n 200 ~/.cache/opencode/logs/mascot.log | rtk grep "mem sample" | rtk tail -1
+
+# 2. sleep 120秒（让师尊在opencode里实际操作触发动画）
+sleep 120
+
+# 3. 记录终态（T1）+ 对比
+echo "=== T1 $(date '+%H:%M:%S') ===" 
+rtk tail -n 200 ~/.cache/opencode/logs/mascot.log | rtk grep "mem sample" | rtk tail -3
+echo "--- mount count (total) ---"
+rtk grep -c "SidebarMascot mount" ~/.cache/opencode/logs/mascot.log
+echo "--- phase machine events ---"
+rtk grep -c "enterPhase" ~/.cache/opencode/logs/mascot.log
+```
+
+**关键观察指标**：
+- **rss**：T0→T1 应稳定不增长（<1.2GB为正常，>1.5GB警惕，逼近2GB必卡死）
+- **heap**：可波动但应能GC回收（下降说明GC正常）
+- **mount次数**：观察增长速率（每秒3-5次为mount风暴，正常应<1次/秒）
+- **enterPhase事件**：验证Phase Machine是否正常触发
+
+**timeout必须设150000ms（120s sleep + 30s余量）**。
+
+**向师尊汇报格式**：
+1. rss T0→T1 变化（增/减/稳定）
+2. mount速率（次/秒）
+3. Phase Machine触发情况
+4. 是否发现异常
+
 ### 查看日志
 
 调试日志在 `~/.cache/opencode/logs/mascot.log`，用 `log("DEBUG", "...")` 输出。

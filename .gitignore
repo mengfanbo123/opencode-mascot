@@ -4,3 +4,8 @@ dist/
 .DS_Store
 .codegraph/
 .omo/
+
+# IDE & debug artifacts
+.idea/
+*.heapsnapshot
+.debug-journal.md

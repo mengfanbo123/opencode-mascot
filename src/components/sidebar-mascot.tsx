@@ -1,12 +1,13 @@
 /** @jsxImportSource @opentui/solid */
 
-import { createSignal, onCleanup } from "solid-js";
+import { createSignal, createEffect, onCleanup, Show } from "solid-js";
 import type { JSX } from "@opentui/solid";
 import type { MascotPack, MascotState } from "../core/types";
 import { createAnimatedRenderer } from "../core/ascii-renderer";
 import { onCelebrate, onVersion, onScatter, onPropShow } from "../core/celebration-bus";
 import { getProp } from "../core/prop-loader";
 import { log } from "../core/logger";
+import { mascotVisible, phaseMachineOn } from "../core/mascot-state";
 
 interface SidebarMascotProps {
   mascots: Record<string, MascotPack>;
@@ -131,7 +132,22 @@ let phaseTimer: ReturnType<typeof setTimeout> | null = null;
 let flyTimer: ReturnType<typeof setInterval> | null = null;
 let fallTimer: ReturnType<typeof setInterval> | null = null;
 let swayTimer: ReturnType<typeof setInterval> | null = null;
-let phaseCycleCompleted = false;
+
+let pendingPhaseTimeouts: ReturnType<typeof setTimeout>[] = [];
+
+const trackTimeout = (fn: () => void, delay: number): ReturnType<typeof setTimeout> => {
+  const id = setTimeout(() => {
+    pendingPhaseTimeouts = pendingPhaseTimeouts.filter(t => t !== id);
+    fn();
+  }, delay);
+  pendingPhaseTimeouts.push(id);
+  return id;
+};
+
+const clearAllPhaseTimeouts = () => {
+  pendingPhaseTimeouts.forEach((t) => { clearTimeout(t); });
+  pendingPhaseTimeouts = [];
+};
 
 const stopDive = () => {
   if (diveTimer) { clearInterval(diveTimer); diveTimer = null; }
@@ -155,6 +171,7 @@ const stopVibe = () => {
 const VIBE_COLORS = ["#FF00FF", "#00FFFF", "#FFFF00", "#00FF00", "#FF6600", "#FF0066"];
 
 const startVibeCoding = (sid: number) => {
+  if (vibeTimer) { clearInterval(vibeTimer); vibeTimer = null; }
   setGlobalVibeVisible(true);
   setGlobalVibeDots(0);
   setGlobalVibeColor(VIBE_COLORS[0]);
@@ -170,6 +187,8 @@ const startVibeCoding = (sid: number) => {
 };
 
 const startPadSlideIn = (sid: number, onDone: () => void) => {
+  if (padSlideTimer) { clearInterval(padSlideTimer); padSlideTimer = null; }
+  if (padFrameTimer) { clearInterval(padFrameTimer); padFrameTimer = null; }
   setGlobalPadVisible(true);
   const hidden = -18;
   setGlobalPadOffsetX(hidden);
@@ -220,6 +239,7 @@ const startPadSlideOut = (sid: number, onDone: () => void) => {
 
 const stopPhaseMachine = () => {
   phaseSessionId++; // invalidate all in-flight callbacks
+  clearAllPhaseTimeouts();
   if (phaseTimer) { clearTimeout(phaseTimer); phaseTimer = null; }
   stopFlyAnimation();
   stopDive();
@@ -239,7 +259,6 @@ const stopPhaseMachine = () => {
   }
   currentPhase = 0;
   globalJumping = false;
-  phaseCycleCompleted = false;
 };
 
 const stopFlyAnimation = () => {
@@ -249,6 +268,7 @@ const stopFlyAnimation = () => {
 };
 
 const startFlySequence = (sid: number, onFallStart: () => void, onComplete: () => void) => {
+  stopFlyAnimation();
   setGlobalRopeVisible(true);
   setGlobalFlyOffset(0);
   const targetY = -28;
@@ -262,7 +282,7 @@ const startFlySequence = (sid: number, onFallStart: () => void, onComplete: () =
     setGlobalFlyOffset(Math.round(base + wobble));
     if (t >= 1) {
       if (flyTimer) { clearInterval(flyTimer); flyTimer = null; }
-      setTimeout(() => {
+      trackTimeout(() => {
         if (sid !== phaseSessionId) return;
         onFallStart();
         const fallStart = Date.now();
@@ -286,6 +306,7 @@ const startFlySequence = (sid: number, onFallStart: () => void, onComplete: () =
 };
 
 const startDiveSequence = (sid: number, onDone: () => void) => {
+  if (diveTimer) { clearInterval(diveTimer); diveTimer = null; }
   setGlobalDiving(true);
   const diveStart = Date.now();
   const diveDuration = 500;
@@ -320,12 +341,12 @@ const enterPhase1 = () => {
   setGlobalOnMachine(false);
   setGlobalPowerLineVisible(true);
   r.bounceSafe();
-  setTimeout(() => { if (sid !== phaseSessionId) return; setGlobalOnMachine(true); }, 450);
-  setTimeout(() => {
+  trackTimeout(() => { if (sid !== phaseSessionId) return; setGlobalOnMachine(true); }, 450);
+  trackTimeout(() => {
     if (sid !== phaseSessionId) { log("DEBUG", `enterPhase1: mid aborted sid=${sid}`); return; }
     globalJumping = false;
     startBusyPacing();
-    setTimeout(() => {
+    trackTimeout(() => {
       if (sid !== phaseSessionId) return;
       stopBusyPacing();
       startFlySequence(
@@ -349,7 +370,7 @@ const enterPhase1 = () => {
 const enterPhase2 = () => {
   currentPhase = 2;
   const sid = phaseSessionId;
-  log("DEBUG", `enterPhase${currentPhase} sid=${sid} cycleCompleted=${phaseCycleCompleted}`);
+  log("DEBUG", `enterPhase${currentPhase} sid=${sid}`);
   const r = singletonRenderers?.[globalCurrentName()];
   if (!r) return;
   const pcCase = getProp("pc-case");
@@ -361,9 +382,7 @@ const enterPhase2 = () => {
   setGlobalOnMachine(false);
   r.setCharacterHidden(false);
   startVibeCoding(sid);
-  if (!phaseCycleCompleted) {
-    phaseTimer = setTimeout(() => enterPhase3(), 60000);
-  }
+  phaseTimer = trackTimeout(() => enterPhase3(), 45000);
 };
 
 const enterPhase3 = () => {
@@ -374,12 +393,12 @@ const enterPhase3 = () => {
   if (!r) return;
   r.setCharacterHidden(false);
   setGlobalOnMachine(false);
-  setTimeout(() => {
+  trackTimeout(() => {
     if (sid !== phaseSessionId) return;
     startPadSlideIn(sid, () => {
       log("DEBUG", `phase3 pad slid in sid=${sid}`);
       r.setCharacterHidden(true);
-      phaseTimer = setTimeout(() => {
+      phaseTimer = trackTimeout(() => {
         if (sid !== phaseSessionId) return;
         startPadSlideOut(sid, () => {
           if (sid !== phaseSessionId) return;
@@ -390,10 +409,9 @@ const enterPhase3 = () => {
           setGlobalPosY(Math.max(10, globalPosY() - 10));
           r.setCharacterHidden(false);
           fallToWorkY();
-          setTimeout(() => {
+          trackTimeout(() => {
             if (sid !== phaseSessionId) return;
-            phaseCycleCompleted = true;
-            enterPhase2();
+            enterPhase1();
           }, 800);
         });
       }, 30000);
@@ -407,7 +425,8 @@ const startPhaseMachine = () => {
 };
 
 export function SidebarMascot(props: SidebarMascotProps): JSX.Element {
-  log("DEBUG", "SidebarMascot mount");
+  const _cols = (typeof process !== "undefined" && process.stdout?.columns) || 0;
+  log("DEBUG", `SidebarMascot mount cols=${_cols}`);
   const names = Object.keys(props.mascots);
   const initialName =
     props.initialMascot && props.mascots[props.initialMascot]
@@ -451,7 +470,29 @@ export function SidebarMascot(props: SidebarMascotProps): JSX.Element {
     if (returnTimer) { clearInterval(returnTimer); returnTimer = null; }
   };
 
-  onCleanup(() => { stopPeek(); stopReturn(); });
+  onCleanup(() => {
+    log("DEBUG", "SidebarMascot onCleanup");
+    stopPeek();
+    stopReturn();
+  });
+
+  createEffect(() => {
+    if (!phaseMachineOn()) {
+      stopPhaseMachine();
+      const r = renderers[currentName()];
+      if (r) {
+        r.setProp(null);
+        r.setSecondaryProp(null);
+        r.setCharacterHidden(false);
+      }
+      setGlobalRopeVisible(false);
+      setGlobalPowerLineVisible(false);
+      setGlobalPadVisible(false);
+      setGlobalVibeVisible(false);
+      setGlobalOnMachine(false);
+      log("DEBUG", "power off: Phase Machine stopped, props hidden");
+    }
+  });
 
   const switchToNext = () => {
     const cur = currentName();
@@ -564,7 +605,9 @@ export function SidebarMascot(props: SidebarMascotProps): JSX.Element {
           r.setCharacterHidden(false);
           setGlobalOnMachine(false);
           fallToWorkY();
-          setTimeout(() => startPhaseMachine(), 1200);
+          if (phaseMachineOn()) {
+            trackTimeout(() => startPhaseMachine(), 1200);
+          }
         }
       } else {
         renderers[globalCurrentName()].setState("idle");
@@ -681,14 +724,15 @@ export function SidebarMascot(props: SidebarMascotProps): JSX.Element {
   };
 
   return (
-    <>
-      {globalRopeVisible() ? (
-        <box position="absolute" left={posX() + propOffset() + 4} top={0} zIndex={40} flexDirection="column" width={3}>
-          {Array.from({ length: Math.max(0, posY() - 4) }, (_, i) => (
-            <text fg="#FFD700">{i % 2 === 0 ? "├─┤" : "│ │"}</text>
-          ))}
-        </box>
-      ) : null}
+    <Show when={mascotVisible()} fallback={<></>}>
+      <>
+        {globalRopeVisible() ? (
+          <box position="absolute" left={posX() + propOffset() + 4} top={0} zIndex={40} flexDirection="column" width={3}>
+            {Array.from({ length: Math.max(0, posY() - 4) }, (_, i) => (
+              <text fg="#FFD700">{i % 2 === 0 ? "├─┤" : "│ │"}</text>
+            ))}
+          </box>
+        ) : null}
       {renderers[currentName()]?.propElement() ? (() => {
         const isPad = renderers[currentName()]?.getProp()?.name === "pad";
         return (
@@ -781,6 +825,7 @@ export function SidebarMascot(props: SidebarMascotProps): JSX.Element {
         {renderers[currentName()]?.element() ?? null}
       </box>
       ) : null}
-    </>
+      </>
+    </Show>
   );
 }
