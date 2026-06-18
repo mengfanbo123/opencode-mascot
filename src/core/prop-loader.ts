@@ -3,13 +3,16 @@ import { laptopProp } from "../builtins/props/laptop";
 import { padProp } from "../builtins/props/pad";
 import { boxProp } from "../builtins/props/box";
 import { pcCaseProp } from "../builtins/props/pc-case";
+import { laptopBlackProp } from "../builtins/props/laptop-black";
+import { pcCaseBlackProp } from "../builtins/props/pc-case-black";
 
-// 内置道具注册表
 const BUILTIN_PROPS: Record<string, PropPack> = {
   laptop: laptopProp,
   pad: padProp,
   box: boxProp,
   "pc-case": pcCaseProp,
+  "laptop-black": laptopBlackProp,
+  "pc-case-black": pcCaseBlackProp,
 };
 
 const loaded: Record<string, PropPack> = { ...BUILTIN_PROPS };

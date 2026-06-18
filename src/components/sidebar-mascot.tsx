@@ -511,27 +511,29 @@ const startBlackoutSequence = (sid: number) => {
       log("DEBUG", `blackout sparks sid=${sid}`);
       trackTimeout(() => {
         if (sid !== phaseSessionId) return;
-        // stage 3: full blackout, machine stopped（机箱+显示器+电源线消失，小人保留惊恐表情）
-        setGlobalSparkVisible(false);
-        setGlobalPowerLineVisible(false);
-        setGlobalVibeVisible(false);
-        setGlobalRopeVisible(false);
-        setGlobalFlyOffset(0);
-        setGlobalOnMachine(false);
-        const r = singletonRenderers?.[globalCurrentName()];
-        if (r) {
-          r.setProp(null);
-          r.setSecondaryProp(null);
-          r.setState("scared");
-          trackTimeout(() => {
+        // stage 3: 黑屏闪两下（显示器+机箱切黑屏 prop 闪 2 次）
+        const pcCaseBlack = getProp("pc-case-black");
+        const laptopBlack = getProp("laptop-black");
+        const r0 = singletonRenderers?.[globalCurrentName()];
+        if (r0 && pcCaseBlack && laptopBlack) {
+          let blinkCount = 0;
+          const blinkBlack = () => {
             if (sid !== phaseSessionId) return;
-            const rr = singletonRenderers?.[globalCurrentName()];
-            if (rr) rr.setState("busy");
-          }, 3000);
+            if (blinkCount >= 4) {
+              // stage 4: 完全消失
+              finishBlackout(sid);
+              return;
+            }
+            const isBlack = blinkCount % 2 === 0;
+            r0.setProp(isBlack ? pcCaseBlack : getProp("pc-case") ?? pcCaseBlack);
+            r0.setSecondaryProp(isBlack ? laptopBlack : getProp("laptop") ?? laptopBlack);
+            blinkCount++;
+            trackTimeout(blinkBlack, 200);
+          };
+          blinkBlack();
+        } else {
+          finishBlackout(sid);
         }
-        currentPhase = 0;
-        phaseMode = "none";
-        log("DEBUG", `blackout complete sid=${sid}, mascot scared, resume busy in 3s`);
       }, 1200);
       return;
     }
@@ -540,6 +542,30 @@ const startBlackoutSequence = (sid: number) => {
     trackTimeout(doFlicker, 300 + Math.floor(Math.random() * 200));
   };
   doFlicker();
+};
+
+const finishBlackout = (sid: number) => {
+  if (sid !== phaseSessionId) return;
+  setGlobalSparkVisible(false);
+  setGlobalPowerLineVisible(false);
+  setGlobalVibeVisible(false);
+  setGlobalRopeVisible(false);
+  setGlobalFlyOffset(0);
+  setGlobalOnMachine(false);
+  const r = singletonRenderers?.[globalCurrentName()];
+  if (r) {
+    r.setProp(null);
+    r.setSecondaryProp(null);
+    r.setState("scared");
+    trackTimeout(() => {
+      if (sid !== phaseSessionId) return;
+      const rr = singletonRenderers?.[globalCurrentName()];
+      if (rr) rr.setState("busy");
+    }, 3000);
+  }
+  currentPhase = 0;
+  phaseMode = "none";
+  log("DEBUG", `blackout complete sid=${sid}, mascot scared, resume busy in 3s`);
 };
 
 let toggleCooldownUntil = 0;
