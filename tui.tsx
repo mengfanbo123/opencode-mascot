@@ -38,10 +38,8 @@ try {
 // ==========================================================================
 let cachedSidebarDispose: (() => void) | null = null;
 const [cachedSidebarEl, setCachedSidebarEl] = createSignal<JSX.Element | null>(null);
-// sidebar_content slot reactive 只追踪 cachedSidebarEl。
-// toggle on 时 cachedSidebarEl 已是 null（toggle off dispose 后），setNull 无变化不触发重渲染。
-// forceRebuild 计数 signal：toggle on 自增，sidebar_content 读它建立依赖 → 强制重渲染。
 const [forceRebuild, setForceRebuild] = createSignal(0);
+let lastForceSidebarRebuild = 0;
 
 const disposeCachedSidebar = () => {
   if (cachedSidebarDispose) {
@@ -59,10 +57,12 @@ const tui: TuiPlugin = async (api, _options) => {
     slots: {
       sidebar_content() {
         forceRebuild();
-        forceSidebarRebuild();
+        const fbr = forceSidebarRebuild();
+        if (lastForceSidebarRebuild !== fbr) {
+          lastForceSidebarRebuild = fbr;
+          disposeCachedSidebar();
+        }
         if (mascotVisible() && !cachedSidebarEl()) {
-          // 不 resetSingletonRenderers：switchToNext 需 renderer 模块级保留 prop/state
-          // toggle on 才 reset（renderer 绑已 dispose scope）
           setCachedSidebarEl(createRoot((dispose) => {
             cachedSidebarDispose = dispose;
             return <SidebarMascot mascots={mascots} api={api} />;
