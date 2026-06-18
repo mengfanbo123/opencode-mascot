@@ -5,7 +5,7 @@ import { join, dirname } from "node:path"
 import { fileURLToPath } from "node:url"
 import { createRoot, createSignal, type JSX } from "solid-js"
 import { loadAllMascots } from "./src/core/mascot-loader"
-import { SidebarMascot, stopPhaseMachine, showMascotPosition, resetLastBusySessionId, triggerEasterIfBusy, resumeBusyState } from "./src/components/sidebar-mascot"
+import { SidebarMascot, stopPhaseMachine, showMascotPosition, resetLastBusySessionId, triggerEasterIfBusy, resumeBusyState, resetSingletonRenderers } from "./src/components/sidebar-mascot"
 import { HomeMascot, hideHomeMascotPosition } from "./src/components/home-mascot"
 import { checkAndUpdate } from "./src/core/updater"
 import { emitCelebrate, emitVersion, emitScatter } from "./src/core/celebration-bus"
@@ -58,6 +58,8 @@ const tui: TuiPlugin = async (api, _options) => {
       sidebar_content() {
         log("DEBUG", `sidebar_content called, hasCache=${!!cachedSidebarEl()}, visible=${mascotVisible()}`);
         if (mascotVisible() && !cachedSidebarEl()) {
+          // 重建前 reset renderer：避免复用绑已 dispose scope 的旧 renderer → native 孤儿
+          resetSingletonRenderers();
           setCachedSidebarEl(createRoot((dispose) => {
             cachedSidebarDispose = dispose;
             return <SidebarMascot mascots={mascots} api={api} />;
@@ -93,12 +95,14 @@ const tui: TuiPlugin = async (api, _options) => {
             disposeCachedSidebar();
             log("INFO", "mascot.toggle OFF: cache disposed, sidebar_content returns null next");
           } else {
-            // toggle on：sidebar_content 检测 mascotVisible + cachedSidebarEl=null 时重建
+            // toggle on：setMascotVisible + dispose cache 触发 opencode 重渲染 slot
+            // sidebar_content 检测 visible + cache=null → 重建 createRoot + 新 renderer
             setMascotVisible(true);
             setPhaseMachineOn(true);
             showMascotPosition();
+            disposeCachedSidebar();
             resumeBusyState();
-            log("INFO", "mascot.toggle ON: signal set, sidebar_content will rebuild on next call");
+            log("INFO", "mascot.toggle ON: visible + cache cleared, slot will rebuild");
           }
           api.ui.toast({ message: `Mascot ${next ? "ON" : "OFF"}` });
         }
