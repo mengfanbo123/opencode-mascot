@@ -512,8 +512,18 @@ const startBlackoutSequence = (sid: number) => {
   doFlicker();
 };
 
+let toggleCooldownUntil = 0;
+
+export const markToggleOnCooldown = (ms: number = 3000) => {
+  toggleCooldownUntil = Date.now() + ms;
+};
+
 const triggerEasterEgg = () => {
   if (currentPhase > 0) return;
+  if (Date.now() < toggleCooldownUntil) {
+    log("DEBUG", `triggerEasterEgg skipped: toggle cooldown active`);
+    return;
+  }
   if (!phaseMachineOn()) {
     phaseMode = "none";
     startBusyPacing();
