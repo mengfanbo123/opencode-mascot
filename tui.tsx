@@ -32,6 +32,9 @@ try {
 //       父组件 destroy 时 dispose 不到这个 root 的 native 节点
 // 数据: mount 从 1380 次/2分钟 → 1 次（2026-06-17 独立 demo 验证）
 // ⚠️ 月儿 2026-06-17 曾误删此缓存导致 mount 风暴回归，禁止再删 ⚠️
+// ⚠️ 2026-06-18 补丁：加 disposed 标志。home→work 跳转时 opencode dispose
+//    旧 root（native 节点随之失效），下次 sidebar_content 调用时检测到
+//    disposed → recreate 新 root。避免缓存孤儿导致不显示。⚠️
 // ==========================================================================
 let cachedSidebarDispose: (() => void) | null = null;
 const [cachedSidebarEl, setCachedSidebarEl] = createSignal<JSX.Element | null>(null);
@@ -52,19 +55,14 @@ const tui: TuiPlugin = async (api, _options) => {
     order: 160,
     slots: {
       sidebar_content() {
-        // 每次调用都 dispose 旧 root + recreate 新 root：
-        // - 解决 home→work 跳转时 cached native 节点孤儿问题（旧 container 已销毁）
-        // - dispose 真正清理 native 节点 + reactive scope，避免 mount 风暴累积
-        // - singletonRenderers 模块级保留，renderer 状态不丢
-        log("DEBUG", `sidebar_content called, hasDispose=${!!cachedSidebarDispose}, wasCached=${!!cachedSidebarEl()}`);
-        if (cachedSidebarDispose) {
-          cachedSidebarDispose();
-          cachedSidebarDispose = null;
+        // 诊断阶段：记录每次调用，验证缓存假设
+        log("DEBUG", `sidebar_content called, hasCache=${!!cachedSidebarEl()}, hasDispose=${!!cachedSidebarDispose}`);
+        if (!cachedSidebarEl()) {
+          setCachedSidebarEl(createRoot((dispose) => {
+            cachedSidebarDispose = dispose;
+            return <SidebarMascot mascots={mascots} api={api} />;
+          }));
         }
-        setCachedSidebarEl(createRoot((dispose) => {
-          cachedSidebarDispose = dispose;
-          return <SidebarMascot mascots={mascots} api={api} />;
-        }));
         return (
           <Show when={mascotVisible()} fallback={<></>}>
             {cachedSidebarEl()}
