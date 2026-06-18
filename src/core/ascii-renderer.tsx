@@ -71,6 +71,7 @@ export function createAnimatedRenderer(pack: MascotPack): {
   getProp: () => PropPack | null;
   getSecondaryProp: () => PropPack | null;
   setExtra: (name: string, value: unknown) => void;
+  stopAllAnimTimers: () => void;
   destroy: () => void;
 } {
   const anim = { ...DEFAULT_ANIM, ...pack.animations };
@@ -874,5 +875,5 @@ export function createAnimatedRenderer(pack: MascotPack): {
 
   const getProp = () => activeProp();
 
-  return { element, propElement, secondaryPropElement, getPropPosition: () => propPosition(), getCharacterHidden: () => characterHidden(), getState: currentState, setState, toggleWalk, setDragging, setCharacterHidden, celebrateUpdate, bounce, bounceSafe, showVersion, scatterIn, explode, fallApart, setProp, getProp, setSecondaryProp, getSecondaryProp, setExtra, destroy };
+  return { element, propElement, secondaryPropElement, getPropPosition: () => propPosition(), getCharacterHidden: () => characterHidden(), getState: currentState, setState, toggleWalk, setDragging, setCharacterHidden, celebrateUpdate, bounce, bounceSafe, showVersion, scatterIn, explode, fallApart, setProp, getProp, setSecondaryProp, getSecondaryProp, setExtra, stopAllAnimTimers: stopAllAnimations, destroy };
 }

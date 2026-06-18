@@ -293,6 +293,10 @@ export const stopPhaseMachine = () => {
     r.setProp(null);
     r.setSecondaryProp(null);
     r.setCharacterHidden(false);
+    r.stopAllAnimTimers();
+  }
+  for (const name in singletonRenderers) {
+    if (name !== globalCurrentName()) singletonRenderers[name].stopAllAnimTimers();
   }
   currentPhase = 0;
   phaseMode = "none";
