@@ -695,10 +695,8 @@ export function SidebarMascot(props: SidebarMascotProps): JSX.Element {
     const idx = names.indexOf(cur);
     const nextName = names[(idx + 1) % names.length];
 
-    // 记录切换前 phase，切形象后重进相同 phase（不重启 easter roll）
-    const wasPhase = currentPhase;
-    const wasMode = phaseMode;
-    if (wasPhase > 0) {
+    const inPhase = currentPhase > 0;
+    if (inPhase) {
       stopPhaseMachine();
     }
 
@@ -718,17 +716,8 @@ export function SidebarMascot(props: SidebarMascotProps): JSX.Element {
     setCurrentName(nextName);
     setUserOverride(true);
 
-    // 重进相同 phase：新形象接续当前 phase 步骤（prop/rope/powerline 重新设置）
-    if (wasPhase > 0 && phaseMachineOn()) {
-      trackTimeout(() => {
-        if (wasMode === "p3") {
-          enterPhase3();
-        } else if (wasPhase >= 2) {
-          enterPhase2();
-        } else {
-          enterPhase1();
-        }
-      }, 300);
+    if (inPhase && phaseMachineOn()) {
+      trackTimeout(() => triggerEasterEgg(), 1200);
     }
   };
 
