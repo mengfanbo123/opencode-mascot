@@ -483,17 +483,17 @@ export const enterPhase3 = () => {
         if (sid !== phaseSessionId) return;
         startPadSlideOut(sid, () => {
           if (sid !== phaseSessionId) return;
-          stopVibe();
-          setGlobalPowerLineVisible(false);
+          // P3 独立 pad 彩蛋：动画结束直接恢复 busy，不调 blackout（blackout 是 P1+P2 流程）
           r.setProp(null);
           r.setSecondaryProp(null);
           setGlobalPosY(Math.max(10, globalPosY() - 10));
           r.setCharacterHidden(false);
           fallToWorkY();
-          trackTimeout(() => {
-            if (sid !== phaseSessionId) return;
-            startBlackoutSequence(sid);
-          }, 800);
+          currentPhase = 0;
+          phaseMode = "none";
+          r.setState("busy");
+          startBusyPacing();
+          log("DEBUG", `phase3 pad done sid=${sid}, resume busy`);
         });
       }, 30000);
     });
