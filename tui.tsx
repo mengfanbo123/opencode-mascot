@@ -5,7 +5,7 @@ import { join, dirname } from "node:path"
 import { fileURLToPath } from "node:url"
 import { createRoot, createSignal, Show, type JSX } from "solid-js"
 import { loadAllMascots } from "./src/core/mascot-loader"
-import { SidebarMascot, stopPhaseMachine, hideMascotPosition, resetLastBusySessionId, triggerEasterIfBusy, resumeBusyState, resetSingletonRenderers } from "./src/components/sidebar-mascot"
+import { SidebarMascot, stopPhaseMachine, hideMascotPosition, showMascotPosition, resetLastBusySessionId, triggerEasterIfBusy, resumeBusyState, resetSingletonRenderers } from "./src/components/sidebar-mascot"
 import { HomeMascot, hideHomeMascotPosition } from "./src/components/home-mascot"
 import { checkAndUpdate } from "./src/core/updater"
 import { emitCelebrate, emitVersion, emitScatter } from "./src/core/celebration-bus"
@@ -98,10 +98,12 @@ const tui: TuiPlugin = async (api, _options) => {
             // - disposeCachedSidebar 后 setCachedSidebarEl(null) 触发 sidebar_content
             // - sidebar_content 建 root1，root1 的 SidebarMascot 因 singletonRenderers=null 建全新 renderer
             // 若顺序反：sidebar_content 抢先建 root1 复用旧 renderer，reset 后 destroy 旧 renderer → root1 持废引用
+            // showMascotPosition 恢复 posX/Y（toggle off 时 hideMascotPosition 设 -1000）
             resetSingletonRenderers();
             disposeCachedSidebar();
             setMascotVisible(true);
             setPhaseMachineOn(true);
+            showMascotPosition();
             resumeBusyState();
             log("INFO", "mascot.toggle ON: reset renderers + disposed cache, sidebar_content will recreate");
           }
