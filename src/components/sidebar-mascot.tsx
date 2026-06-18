@@ -193,6 +193,8 @@ const stopBusyPacing = () => {
 
 let currentPhase: 0 | 1 | 2 | 3 = 0;
 let phaseMode: "p1p2" | "p3" | "bomb" | "none" = "none";
+export const getCurrentPhase = () => currentPhase;
+export const getPhaseMode = () => phaseMode;
 let phaseSessionId = 0;
 let phaseTimer: ReturnType<typeof setTimeout> | null = null;
 let flyTimer: ReturnType<typeof setInterval> | null = null;
@@ -396,7 +398,7 @@ const startDiveSequence = (sid: number, onDone: () => void) => {
   }, 50);
 };
 
-const enterPhase1 = () => {
+export const enterPhase1 = () => {
   if (globalJumping) return;
   const sid = phaseSessionId;
   currentPhase = 1;
@@ -440,7 +442,7 @@ const enterPhase1 = () => {
   }, 950);
 };
 
-const enterPhase2 = () => {
+export const enterPhase2 = () => {
   currentPhase = 2;
   const sid = phaseSessionId;
   log("DEBUG", `enterPhase${currentPhase} sid=${sid} mascotVisible=${mascotVisible()} phaseMachineOn=${phaseMachineOn()}`);
@@ -462,7 +464,7 @@ const enterPhase2 = () => {
   }, 45000);
 };
 
-const enterPhase3 = () => {
+export const enterPhase3 = () => {
   currentPhase = 3;
   const sid = phaseSessionId;
   log("DEBUG", `enterPhase${currentPhase} sid=${sid}`);
@@ -693,8 +695,10 @@ export function SidebarMascot(props: SidebarMascotProps): JSX.Element {
     const idx = names.indexOf(cur);
     const nextName = names[(idx + 1) % names.length];
 
-    const inPhase = currentPhase > 0;
-    if (inPhase) {
+    // 记录切换前 phase，切形象后重进相同 phase（不重启 easter roll）
+    const wasPhase = currentPhase;
+    const wasMode = phaseMode;
+    if (wasPhase > 0) {
       stopPhaseMachine();
     }
 
@@ -714,8 +718,17 @@ export function SidebarMascot(props: SidebarMascotProps): JSX.Element {
     setCurrentName(nextName);
     setUserOverride(true);
 
-    if (inPhase && phaseMachineOn()) {
-      trackTimeout(() => triggerEasterEgg(), 1200);
+    // 重进相同 phase：新形象接续当前 phase 步骤（prop/rope/powerline 重新设置）
+    if (wasPhase > 0 && phaseMachineOn()) {
+      trackTimeout(() => {
+        if (wasMode === "p3") {
+          enterPhase3();
+        } else if (wasPhase >= 2) {
+          enterPhase2();
+        } else {
+          enterPhase1();
+        }
+      }, 300);
     }
   };
 
