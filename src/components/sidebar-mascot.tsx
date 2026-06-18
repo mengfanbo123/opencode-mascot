@@ -275,6 +275,7 @@ const startPadSlideOut = (sid: number, onDone: () => void) => {
 
 export const stopPhaseMachine = () => {
   phaseSessionId++; // invalidate all in-flight callbacks
+  log("INFO", `stopPhaseMachine called: currentPhase=${currentPhase} phaseMode=${phaseMode} currentName=${globalCurrentName()}`);
   clearAllPhaseTimeouts();
   if (phaseTimer) { clearTimeout(phaseTimer); phaseTimer = null; }
   stopFlyAnimation();
@@ -370,7 +371,7 @@ const enterPhase1 = () => {
   const sid = phaseSessionId;
   currentPhase = 1;
   setGlobalPosY(30);
-  log("DEBUG", `enterPhase${currentPhase} sid=${sid}`);
+  log("DEBUG", `enterPhase${currentPhase} sid=${sid} mascotVisible=${mascotVisible()} phaseMachineOn=${phaseMachineOn()} currentName=${globalCurrentName()}`);
   const r = singletonRenderers?.[globalCurrentName()];
   if (!r) { currentPhase = 0; return; }
   stopBusyPacing();
@@ -412,13 +413,14 @@ const enterPhase1 = () => {
 const enterPhase2 = () => {
   currentPhase = 2;
   const sid = phaseSessionId;
-  log("DEBUG", `enterPhase${currentPhase} sid=${sid}`);
+  log("DEBUG", `enterPhase${currentPhase} sid=${sid} mascotVisible=${mascotVisible()} phaseMachineOn=${phaseMachineOn()}`);
   const r = singletonRenderers?.[globalCurrentName()];
-  if (!r) return;
+  if (!r) { log("ERROR", `enterPhase2: no renderer for ${globalCurrentName()}`); return; }
   const pcCase = getProp("pc-case");
-  if (!pcCase) return;
-  const laptop = getProp("laptop");
+  if (!pcCase) { log("ERROR", `enterPhase2: no pc-case prop`); return; }
+  log("DEBUG", `enterPhase2: setting prop pcCase on ${globalCurrentName()}, renderer state=${r.getState()}`);
   r.setProp(pcCase);
+  const laptop = getProp("laptop");
   if (laptop) r.setSecondaryProp(laptop);
   log("DEBUG", `enterPhase2: mainProp=${r.getProp()?.name}, propPos=${r.getPropPosition()}`);
   setGlobalOnMachine(false);
