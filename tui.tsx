@@ -92,9 +92,8 @@ const tui: TuiPlugin = async (api, _options) => {
             setPhaseMachineOn(true);
             showMascotPosition();
             showHomeMascotPosition();
-            triggerEasterIfBusy();
             resumeBusyState();
-            log("INFO", "mascot.toggle ON: position restored (sidebar+home), easter resumed, busy state restored, timers resume");
+            log("INFO", "mascot.toggle ON: position restored (sidebar+home), easter resumed, busy state restored (no immediate phase trigger - avoid reconciler OOM)");
           }
           api.ui.toast({ message: `Mascot ${next ? "ON" : "OFF"}` });
         }
