@@ -7,7 +7,7 @@ import { createAnimatedRenderer } from "../core/ascii-renderer";
 import { onCelebrate, onVersion, onScatter, onPropShow } from "../core/celebration-bus";
 import { getProp } from "../core/prop-loader";
 import { log } from "../core/logger";
-import { mascotVisible, phaseMachineOn } from "../core/mascot-state";
+import { mascotVisible, phaseMachineOn, globalCurrentName, setGlobalCurrentName } from "../core/mascot-state";
 
 interface SidebarMascotProps {
   mascots: Record<string, MascotPack>;
@@ -38,7 +38,6 @@ const EDGE_THRESHOLD = 3;
 let singletonRenderers: Record<string, ReturnType<typeof createAnimatedRenderer>> | null = null;
 let singletonListener = false;
 let singletonUnsubs: (() => void)[] = [];
-const [globalCurrentName, setGlobalCurrentName] = createSignal<string>("yueer");
 const [globalUserOverride, setGlobalUserOverride] = createSignal(false);
 const [globalPosX, setGlobalPosX] = createSignal(20);
 const [globalPosY, setGlobalPosY] = createSignal(2);
