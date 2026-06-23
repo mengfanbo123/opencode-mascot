@@ -9,7 +9,7 @@ import { SidebarMascot, stopPhaseMachine, restoreMascotPosition, resetLastBusySe
 import { HomeMascot, hideHomeMascotPosition } from "./src/components/home-mascot"
 import { checkAndUpdate } from "./src/core/updater"
 import { emitCelebrate, emitVersion, emitScatter } from "./src/core/celebration-bus"
-import { mascotVisible, setMascotVisible, phaseMachineOn, setPhaseMachineOn, forceSidebarRebuild, markSlotActive, isSlotStale } from "./src/core/mascot-state"
+import { mascotVisible, setMascotVisible, phaseMachineOn, setPhaseMachineOn, forceSidebarRebuild, markSlotActive, isSlotStale, isSubagentActive } from "./src/core/mascot-state"
 import { log } from "./src/core/logger"
 
 const __filename = fileURLToPath(import.meta.url);
@@ -56,6 +56,13 @@ const tui: TuiPlugin = async (api, _options) => {
     order: 160,
     slots: {
       sidebar_content() {
+        if (isSubagentActive()) {
+          if (cachedSidebarEl()) {
+            log("INFO", "sidebar_content: subagent active, dispose cache (return null)");
+            disposeCachedSidebar();
+          }
+          return null;
+        }
         const staleNow = isSlotStale();
         log("DEBUG", `[sidebar_content] called staleNow=${staleNow} hasCache=${!!cachedSidebarEl()} visible=${mascotVisible()}`);
         markSlotActive();

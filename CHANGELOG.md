@@ -2,6 +2,11 @@
 
 本项目版本号遵循 semver。每个版本列出主要变更。
 
+## [1.1.11] - 2026-06-23
+
+### Fixed
+- **根治：派子代理期间完全卸载小人**：停止逐个 timer 加守卫（打地鼠），改为 sidebar_content 层检测 `isSubagentActive()`，true 时 dispose createRoot + return null。派子代理期间小人完全卸载（无 timer/无 signal/无 reconciler），不可能崩。子代理结束 isSubagentActive=false，sidebar_content 被调用 → 重建。代价：派子代理期间 TUI sidebar 看不到小人（clawd 桌面螃蟹仍在）
+
 ## [1.1.10] - 2026-06-23
 
 ### Fixed

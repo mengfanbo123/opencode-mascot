@@ -887,6 +887,10 @@ export function SidebarMascot(props: SidebarMascotProps): JSX.Element {
       if (sessionId !== null && mainSessionId !== null && (sessionId !== mainSessionId || isChild)) {
         const active = statusType === "busy" || statusType === "retry";
         setSubagentActive(active);
+        if (!active) {
+          setForceSidebarRebuild(forceSidebarRebuild() + 1);
+          log("INFO", "subagent ended, force sidebar rebuild");
+        }
         log("DEBUG", `subagent session ${sessionId} (child=${isChild}): active=${active}`);
         return;
       }
