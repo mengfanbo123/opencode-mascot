@@ -254,7 +254,7 @@ export function createAnimatedRenderer(pack: MascotPack): {
   const hasBlink = (pack.frames as Record<string, string[] | undefined>)["blink"] !== undefined;
 
   const blinkTimer = setInterval(() => {
-    if (!mascotVisible()) return;
+    if (!mascotVisible() || isSubagentActive()) return;
     if (currentState() !== "sleeping" && Math.random() < anim.blinkChance && hasBlink) {
       setFrameOverride("blink");
       setTimeout(() => setFrameOverride(null), 150);
@@ -267,7 +267,7 @@ export function createAnimatedRenderer(pack: MascotPack): {
   );
 
   const expressionTimer = setInterval(() => {
-    if (!mascotVisible()) return;
+    if (!mascotVisible() || isSubagentActive()) return;
     if (currentState() === "idle" && !frameOverride()) {
       const pick = availableExpressions[Math.floor(Math.random() * availableExpressions.length)];
       if (pick) {
@@ -279,7 +279,7 @@ export function createAnimatedRenderer(pack: MascotPack): {
 
   // 3. Breathing
   const breathTimer = setInterval(() => {
-    if (!mascotVisible()) return;
+    if (!mascotVisible() || isSubagentActive()) return;
     if (currentState() === "idle") {
       setBreathPhase((v) => !v);
     }
@@ -294,7 +294,7 @@ export function createAnimatedRenderer(pack: MascotPack): {
     if (walkInterval || !walkEnabled()) return;
     walkStep = 0;
     walkInterval = setInterval(() => {
-      if (!mascotVisible()) return;
+      if (!mascotVisible() || isSubagentActive()) return;
       if (currentState() !== "idle") {
         stopWalk();
         return;
@@ -374,7 +374,7 @@ export function createAnimatedRenderer(pack: MascotPack): {
     for (const t of effects.timers) {
       let timerId: ReturnType<typeof setInterval>;
       timerId = setInterval(() => {
-        if (!mascotVisible()) return;
+        if (!mascotVisible() || isSubagentActive()) return;
         if (isSubagentActive()) return;
         try {
           t.update(timerCtx);
@@ -402,7 +402,7 @@ export function createAnimatedRenderer(pack: MascotPack): {
   // 内存采样：每2秒记录heapUsed，卡死时日志有增长曲线
   let memLastLogged = 0;
   const memSampleTimer = setInterval(() => {
-    if (!mascotVisible()) return;
+    if (!mascotVisible() || isSubagentActive()) return;
     const mu = process.memoryUsage();
     const heapMB = Math.round(mu.heapUsed / 1024 / 1024);
     const delta = heapMB - memLastLogged;
@@ -413,7 +413,7 @@ export function createAnimatedRenderer(pack: MascotPack): {
   }, 2000);
 
   const perfGuardTimer = setInterval(() => {
-    if (!mascotVisible()) return;
+    if (!mascotVisible() || isSubagentActive()) return;
     if (Date.now() - perfStart < 5000) return; // 5s warmup
     const t0 = Date.now();
     const frameName = frameOverride() ?? STATE_TO_FRAME[currentState()] ?? "default";

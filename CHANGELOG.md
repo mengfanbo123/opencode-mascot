@@ -2,6 +2,11 @@
 
 本项目版本号遵循 semver。每个版本列出主要变更。
 
+## [1.1.6] - 2026-06-23
+
+### Fixed
+- **内置 animation timers 派子代理崩溃修复**：师尊崩溃堆栈铁证——行号 280/290/308/352/754 = breathTimer/walkInterval/jumpTimer/bounceSafe，全是 ascii-renderer 内置 animation timers，之前只给 effectTimers 加了 isSubagentActive 检测，漏了这 7 处内置 timer。修复：所有内置 timer 回调的 `if (!mascotVisible()) return;` 改为 `if (!mascotVisible() || isSubagentActive()) return;`，派子代理期间全部停 animation，防 reconciler insertBefore OOM
+
 ## [1.1.5] - 2026-06-23
 
 ### Fixed
