@@ -2,6 +2,11 @@
 
 本项目版本号遵循 semver。每个版本列出主要变更。
 
+## [1.1.9] - 2026-06-23
+
+### Fixed
+- **effect timer 彻底止血 + 动画恢复**：v1.1.7 onCleanup 清所有 timer 导致内置动画停（breathTimer/blinkTimer/expressionTimer）→ 小人不 busy。v1.1.8 加 propTimer/secondaryPropTimer 守卫但 effect timer 仍崩（堆栈 yueer/index.ts:63 → ascii-renderer.tsx:384，WASM abort 穿透 try-catch + isSubagentActive 守卫）。修复：(1) effect timer 完全禁用（丢 ahogeAlt/stompActive/bubbleIdx 细节动画，frame 切换仍工作）；(2) onCleanup 回退到 v0.8.3 单例设计（不清持续 timer，恢复 breathTimer/blinkTimer/expressionTimer 动画）。止血优先，effect timer 待 opentui/solid scope dispose 可检测后恢复
+
 ## [1.1.8] - 2026-06-23
 
 ### Fixed

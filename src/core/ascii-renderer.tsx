@@ -248,6 +248,9 @@ export function createAnimatedRenderer(pack: MascotPack): {
     setFrameOverride: (name) => setFrameOverride(name),
   };
 
+  // effect timer 临时禁用，timerCtx 保留供未来恢复
+  void timerCtx;
+
   // ─── Built-in timers ───
 
   // 1. Blink
@@ -365,27 +368,28 @@ export function createAnimatedRenderer(pack: MascotPack): {
 
   jumpTimeout = scheduleNextJump();
 
-  // ─── Pack-defined effect timers ───
-  // 派子代理视图切走时 effect timer 继续跑 → update 调 ctx.set → signal effect →
-  // reconciler insertBefore 撞失效 native 节点 → WASM OOM。
-  // try-catch 兜不住 WASM trap（穿透 JS catch 或反复崩卡死 TUI），catch 后必须 self-clear 防重复崩。
+  // ─── Pack-defined effect timers（临时禁用：WASM abort 穿透 try-catch）───
+  // 堆栈铁证 yueer/index.ts:63 → ascii-renderer.tsx:384，try-catch 兜不住 WASM abort。
+  // isSubagentActive 守卫也拦不住（session.created 可能晚于 session.status）。
+  // 止血：完全禁用 effect timer。丢 ahogeAlt/stompActive/bubbleIdx 细节动画，
+  // frame 切换（currentState signal）仍工作，主要状态动画不丢。
   const effectTimers: ReturnType<typeof setInterval>[] = [];
-  if (effects?.timers) {
-    for (const t of effects.timers) {
-      let timerId: ReturnType<typeof setInterval>;
-      timerId = setInterval(() => {
-        if (!mascotVisible() || isSubagentActive()) return;
-        if (isSubagentActive()) return;
-        try {
-          t.update(timerCtx);
-        } catch (e) {
-          log("ERROR", `effect timer crashed (interval=${t.interval}), self-clearing: ${e}`);
-          clearInterval(timerId);
-        }
-      }, t.interval);
-      effectTimers.push(timerId);
-    }
-  }
+  // if (effects?.timers) {
+  //   for (const t of effects.timers) {
+  //     let timerId: ReturnType<typeof setInterval>;
+  //     timerId = setInterval(() => {
+  //       if (!mascotVisible() || isSubagentActive()) return;
+  //       if (isSubagentActive()) return;
+  //       try {
+  //         t.update(timerCtx);
+  //       } catch (e) {
+  //         log("ERROR", `effect timer crashed (interval=${t.interval}), self-clearing: ${e}`);
+  //         clearInterval(timerId);
+  //       }
+  //     }, t.interval);
+  //     effectTimers.push(timerId);
+  //   }
+  // }
 
   resetIdleSleep();
 
@@ -454,8 +458,8 @@ export function createAnimatedRenderer(pack: MascotPack): {
   }, 1000);
 
   // ─── Cleanup ───
-  // createRoot dispose（视图切换/toggle）时必须清所有持续timer
-  // 否则 timer 在已 dispose 的 scope 上 update → WASM abort 穿透 JS try-catch → TUI 崩溃
+  // 单例设计：onCleanup不清持续timer（v0.8.3设计），跨重挂载保持
+  // 只清一次性效果timer + session级动画timer
   onCleanup(() => {
     stopFlash();
     stopDragMsg();
@@ -472,14 +476,6 @@ export function createAnimatedRenderer(pack: MascotPack): {
     if (idleSleepTimeout) { clearTimeout(idleSleepTimeout); idleSleepTimeout = null; }
     if (idlePadTimeout) { clearTimeout(idlePadTimeout); idlePadTimeout = null; }
     if (idleBoxTimeout) { clearTimeout(idleBoxTimeout); idleBoxTimeout = null; }
-    if (blinkTimer) clearInterval(blinkTimer);
-    if (expressionTimer) clearInterval(expressionTimer);
-    if (breathTimer) clearInterval(breathTimer);
-    if (walkTimeout) clearTimeout(walkTimeout);
-    if (jumpTimeout) clearTimeout(jumpTimeout);
-    if (perfGuardTimer) clearInterval(perfGuardTimer);
-    if (memSampleTimer) clearInterval(memSampleTimer);
-    for (const t of effectTimers) clearInterval(t);
   });
 
   const destroy = () => {
