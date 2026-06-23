@@ -866,6 +866,7 @@ export function createAnimatedRenderer(pack: MascotPack): {
         const totalFrames = (prop.frames as string[][]).length;
         const randomize = prop.name === "laptop";
         propTimer = setInterval(() => {
+          if (isSubagentActive()) return;
           if (randomize) {
             setPropFrameIdx(Math.floor(Math.random() * totalFrames));
           } else {
@@ -888,6 +889,7 @@ export function createAnimatedRenderer(pack: MascotPack): {
       const totalFrames = (prop.frames as string[][]).length;
       const randomize = prop.name === "laptop";
       secondaryPropTimer = setInterval(() => {
+        if (isSubagentActive()) return;
         if (randomize) {
           setSecondaryPropFrameIdx(Math.floor(Math.random() * totalFrames));
         } else {
@@ -934,6 +936,7 @@ export function createAnimatedRenderer(pack: MascotPack): {
       const totalFrames = (prop.frames as string[][]).length;
       const randomize = prop.name === "laptop";
       secondaryPropTimer = setInterval(() => {
+        if (isSubagentActive()) return;
         if (randomize) {
           setSecondaryPropFrameIdx(Math.floor(Math.random() * totalFrames));
         } else {

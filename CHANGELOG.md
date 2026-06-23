@@ -2,6 +2,11 @@
 
 本项目版本号遵循 semver。每个版本列出主要变更。
 
+## [1.1.8] - 2026-06-23
+
+### Fixed
+- **propTimer/secondaryPropTimer 漏拦 isSubagentActive**：v1.1.7 onCleanup 清 timer 后仍崩（堆栈 line 989），根因是 propTimer（line 868）+ secondaryPropTimer（line 891/937）的 setInterval 回调无 isSubagentActive 检测。派子代理期间这些 timer 继续 setFrameIdx → signal effect → reconciler 操作失效 scope → WASM abort。修复：三处 setInterval 回调首行加 `if (isSubagentActive()) return;`
+
 ## [1.1.7] - 2026-06-23
 
 ### Fixed
