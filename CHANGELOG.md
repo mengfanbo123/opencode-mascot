@@ -2,6 +2,11 @@
 
 本项目版本号遵循 semver。每个版本列出主要变更。
 
+## [1.1.4] - 2026-06-23
+
+### Fixed
+- **派子代理 effect timer WASM OOM 修复（借鉴 clawd-on-desk）**：v1.1.3 sessionID 比较检测子代理失败——opencode 子代理可能复用主 sessionID 或不发 session.status。借鉴 clawd-on-desk plugin 源码（`session-ids.mjs`），改用 `session.created` 事件 + `properties.info.parentID` 检测：有 parentID 的 session 是子代理 session，维护 `childSessionIds` Set。`session.status` handler 检查 sessionID 是否在 Set 内，是则设 `subagentActive` + 忽略。effect timer 检查 `isSubagentActive()` 派子代理期间停 update。同时监听 `session.deleted` 清理 Set。opencode SDK ≥1.15.13 支持 parentID
+
 ## [1.1.3] - 2026-06-23
 
 ### Fixed

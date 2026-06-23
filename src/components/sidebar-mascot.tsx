@@ -79,6 +79,7 @@ let padFrameTimer: ReturnType<typeof setInterval> | null = null;
 let vibeTimer: ReturnType<typeof setInterval> | null = null;
 let lastBusySessionId: string | null = null;
 let mainSessionId: string | null = null;
+const childSessionIds = new Set<string>();
 let currentSessionStatus: string = "idle";
 export const resetLastBusySessionId = () => { lastBusySessionId = null; };
 
@@ -881,14 +882,35 @@ export function SidebarMascot(props: SidebarMascotProps): JSX.Element {
       if (mainSessionId === null && sessionId !== null) {
         mainSessionId = sessionId;
       }
-      if (sessionId !== null && mainSessionId !== null && sessionId !== mainSessionId) {
+      const isChild = sessionId !== null && childSessionIds.has(sessionId);
+      if (sessionId !== null && mainSessionId !== null && (sessionId !== mainSessionId || isChild)) {
         const active = statusType === "busy" || statusType === "retry";
         setSubagentActive(active);
-        log("DEBUG", `subagent session ${sessionId}: active=${active}`);
+        log("DEBUG", `subagent session ${sessionId} (child=${isChild}): active=${active}`);
         return;
       }
       setSubagentActive(false);
       handleSessionStatus(data);
+    }));
+
+    singletonUnsubs.push(props.api.event.on("session.created", (data: unknown) => {
+      const payload = data as { type?: string; properties?: { sessionID?: string; info?: { parentID?: string } } } | null;
+      const sessionId = payload?.properties?.sessionID ?? null;
+      const parentID = payload?.properties?.info?.parentID ?? null;
+      if (sessionId && parentID) {
+        childSessionIds.add(sessionId);
+        log("DEBUG", `child session detected: ${sessionId} parent=${parentID}`);
+      } else if (sessionId && mainSessionId === null) {
+        mainSessionId = sessionId;
+      }
+    }));
+
+    singletonUnsubs.push(props.api.event.on("session.deleted", (data: unknown) => {
+      const payload = data as { type?: string; properties?: { sessionID?: string } } | null;
+      const sessionId = payload?.properties?.sessionID ?? null;
+      if (sessionId) {
+        childSessionIds.delete(sessionId);
+      }
     }));
 
     singletonUnsubs.push(props.api.event.on("session.idle", () => {
