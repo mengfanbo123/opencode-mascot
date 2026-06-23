@@ -2,6 +2,11 @@
 
 本项目版本号遵循 semver。每个版本列出主要变更。
 
+## [1.1.7] - 2026-06-23
+
+### Fixed
+- **effect timer WASM abort 穿透 try-catch 根因修复**：堆栈铁证 `yueer/index.ts:63 → ascii-renderer.tsx:384`，try-catch 兜不住 WASM abort（Bun wasm trap 穿透 JS catch）。师尊场景：子代理结束→回主视图→**再进子代理**时崩，scope 已损坏但 timer 继续跑。根因：`onCleanup`（line 459）按 v0.8.3 单例设计**不清持续 timer**，但 createRoot dispose（视图切换）时 scope 已失效，timer 在损坏 scope 上 update → WASM abort。修复：onCleanup 改为**清所有持续 timer**（breathTimer/blinkTimer/expressionTimer/effectTimers/walkTimeout/jumpTimeout/perfGuardTimer/memSampleTimer）。废弃过时的单例不清注释
+
 ## [1.1.6] - 2026-06-23
 
 ### Fixed

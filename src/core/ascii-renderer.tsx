@@ -454,8 +454,8 @@ export function createAnimatedRenderer(pack: MascotPack): {
   }, 1000);
 
   // ─── Cleanup ───
-  // 单例设计：onCleanup不清持续timer（v0.8.3设计），跨重挂载保持
-  // 只清一次性效果timer + session级动画timer
+  // createRoot dispose（视图切换/toggle）时必须清所有持续timer
+  // 否则 timer 在已 dispose 的 scope 上 update → WASM abort 穿透 JS try-catch → TUI 崩溃
   onCleanup(() => {
     stopFlash();
     stopDragMsg();
@@ -472,6 +472,14 @@ export function createAnimatedRenderer(pack: MascotPack): {
     if (idleSleepTimeout) { clearTimeout(idleSleepTimeout); idleSleepTimeout = null; }
     if (idlePadTimeout) { clearTimeout(idlePadTimeout); idlePadTimeout = null; }
     if (idleBoxTimeout) { clearTimeout(idleBoxTimeout); idleBoxTimeout = null; }
+    if (blinkTimer) clearInterval(blinkTimer);
+    if (expressionTimer) clearInterval(expressionTimer);
+    if (breathTimer) clearInterval(breathTimer);
+    if (walkTimeout) clearTimeout(walkTimeout);
+    if (jumpTimeout) clearTimeout(jumpTimeout);
+    if (perfGuardTimer) clearInterval(perfGuardTimer);
+    if (memSampleTimer) clearInterval(memSampleTimer);
+    for (const t of effectTimers) clearInterval(t);
   });
 
   const destroy = () => {
