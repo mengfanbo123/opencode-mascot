@@ -57,16 +57,19 @@ const tui: TuiPlugin = async (api, _options) => {
     slots: {
       sidebar_content() {
         const staleNow = isSlotStale();
+        log("DEBUG", `[sidebar_content] called staleNow=${staleNow} hasCache=${!!cachedSidebarEl()} visible=${mascotVisible()}`);
         markSlotActive();
         if (staleNow && cachedSidebarEl()) {
-          log("INFO", "sidebar_content: slot recovered from stale, recreating createRoot");
+          log("INFO", "sidebar_content: slot stale, dispose only (return null this frame)");
           disposeCachedSidebar();
+          return null;
         }
         forceRebuild();
         const fbr = forceSidebarRebuild();
         if (lastForceSidebarRebuild !== fbr) {
           lastForceSidebarRebuild = fbr;
           disposeCachedSidebar();
+          return null;
         }
         if (mascotVisible() && !cachedSidebarEl()) {
           setCachedSidebarEl(createRoot((dispose) => {

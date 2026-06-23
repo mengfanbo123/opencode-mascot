@@ -2,6 +2,11 @@
 
 本项目版本号遵循 semver。每个版本列出主要变更。
 
+## [1.1.5] - 2026-06-23
+
+### Fixed
+- **点进子代理界面崩溃修复（measure function + children 冲突）**：log 铁证——15:38:47-56 sidebar_content 每秒调3-4次，15:38:57 派子代理后 staleNow=true 触发 `disposeCachedSidebar()`，**同一帧立即 recreate createRoot**。dispose 移除旧 absolute box（measure function node）+ 新 createRoot 插入新 box → reconciler `Cannot add child: Nodes with measure functions cannot have children`。历史重演（v0.9.9 修过同错误）。修复：staleNow/forceRebuild 触发 dispose 时**本帧返回 null**（卸载），下一帧 sidebar_content 再被调用时才 recreate。异步分离 dispose 和 create，避免新旧 box 同帧冲突
+
 ## [1.1.4] - 2026-06-23
 
 ### Fixed
