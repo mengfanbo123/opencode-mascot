@@ -2,6 +2,11 @@
 
 本项目版本号遵循 semver。每个版本列出主要变更。
 
+## [1.1.2] - 2026-06-23
+
+### Fixed
+- **v1.1.1 回归修复：小人永远 idle 不切 busy**：根因——v1.1.1 heartbeat guard 假设 sidebar_content 高频调用（视图可见心跳），实际 opencode 仅在初始化/视图切换时调用 sidebar_content，正常发消息完全不调 → `isSlotStale` 永远 true → busy 事件被 buffer → idle 事件正常处理 → 小人永远 idle。诊断 log 铁证：sidebar_content 仅初始化调 2 次，之后 15+ 秒无调用，busy 事件 age=15361ms 全部 buffer。修复：移除 heartbeat buffer 机制（session.status 直接处理），保留 staleNow 重建（视图切换回来时 dispose+recreate createRoot）+ effect timer try-catch 兜底。测试验证：busy 恢复 + 派子代理不崩 + 小人秒回
+
 ## [1.1.1] - 2026-06-23
 
 ### Fixed

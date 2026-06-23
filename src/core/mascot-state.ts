@@ -19,6 +19,7 @@ const SLOT_GUARD_MS = 500;
 
 const markSlotActive = () => { lastSlotActiveTs = Date.now(); };
 const isSlotStale = () => Date.now() - lastSlotActiveTs > SLOT_GUARD_MS;
+const getLastSlotActiveTs = () => lastSlotActiveTs;
 
 export {
   mascotVisible,
@@ -31,5 +32,6 @@ export {
   setForceSidebarRebuild,
   markSlotActive,
   isSlotStale,
+  getLastSlotActiveTs,
   SLOT_GUARD_MS,
 };

@@ -7,7 +7,7 @@ import { createAnimatedRenderer } from "../core/ascii-renderer";
 import { onCelebrate, onVersion, onScatter, onPropShow } from "../core/celebration-bus";
 import { getProp } from "../core/prop-loader";
 import { log } from "../core/logger";
-import { mascotVisible, phaseMachineOn, globalCurrentName, setGlobalCurrentName, forceSidebarRebuild, setForceSidebarRebuild, isSlotStale } from "../core/mascot-state";
+import { mascotVisible, phaseMachineOn, globalCurrentName, setGlobalCurrentName, forceSidebarRebuild, setForceSidebarRebuild } from "../core/mascot-state";
 
 interface SidebarMascotProps {
   mascots: Record<string, MascotPack>;
@@ -38,7 +38,6 @@ const EDGE_THRESHOLD = 3;
 let singletonRenderers: Record<string, ReturnType<typeof createAnimatedRenderer>> | null = null;
 let singletonListener = false;
 let singletonUnsubs: (() => void)[] = [];
-let pendingSessionPayload: unknown = null;
 
 // resetSingletonRenderers: dispose 旧 renderer（signal/computation 绑在旧 createRoot scope）
 // toggle on dispose+recreate createRoot 时必须调用，否则新 SidebarMascot 复用旧 renderer
@@ -875,24 +874,8 @@ export function SidebarMascot(props: SidebarMascotProps): JSX.Element {
     };
 
     singletonUnsubs.push(props.api.event.on("session.status", (data: unknown) => {
-      if (isSlotStale()) {
-        pendingSessionPayload = data;
-        log("DEBUG", `session.status buffered (slot stale)`);
-        return;
-      }
-      pendingSessionPayload = null;
       handleSessionStatus(data);
     }));
-
-    const flushTimer = setInterval(() => {
-      if (pendingSessionPayload !== null && !isSlotStale()) {
-        const p = pendingSessionPayload;
-        pendingSessionPayload = null;
-        log("DEBUG", "flushing pending session.status after slot restored");
-        handleSessionStatus(p);
-      }
-    }, 200);
-    singletonUnsubs.push(() => clearInterval(flushTimer));
 
     singletonUnsubs.push(props.api.event.on("session.idle", () => {
       renderers[globalCurrentName()].setState("happy");
