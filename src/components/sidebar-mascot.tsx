@@ -7,7 +7,7 @@ import { createAnimatedRenderer } from "../core/ascii-renderer";
 import { onCelebrate, onVersion, onScatter, onPropShow } from "../core/celebration-bus";
 import { getProp } from "../core/prop-loader";
 import { log } from "../core/logger";
-import { mascotVisible, phaseMachineOn, globalCurrentName, setGlobalCurrentName, forceSidebarRebuild, setForceSidebarRebuild, setSubagentActive } from "../core/mascot-state";
+import { mascotVisible, phaseMachineOn, globalCurrentName, setGlobalCurrentName, forceSidebarRebuild, setForceSidebarRebuild, setSubagentActive, isSubagentActive } from "../core/mascot-state";
 
 interface SidebarMascotProps {
   mascots: Record<string, MascotPack>;
@@ -164,6 +164,7 @@ const startBusyPacing = () => {
   let phaseTimer = 0;
   let walking = true;
   busyPacingTimer = setInterval(() => {
+    if (isSubagentActive()) return;
     const prop = singletonRenderers?.[globalCurrentName()]?.getProp();
     if (prop && prop.position === "front") return;
     phaseTimer += 100;

@@ -2,6 +2,11 @@
 
 本项目版本号遵循 semver。每个版本列出主要变更。
 
+## [1.1.10] - 2026-06-23
+
+### Fixed
+- **busyPacingTimer 漏拦 isSubagentActive**：v1.1.9 effect timer 禁用后崩溃转移到 sidebar-mascot.tsx:174（`setGlobalPacingX`），根因是 busyPacingTimer setInterval 回调无 isSubagentActive 守卫。派子代理期间 pacing timer 继续 setGlobalPacingX → signal effect → reconciler setProperty → setPosition → WASM OOM。修复：回调首行加 `if (isSubagentActive()) return;`
+
 ## [1.1.9] - 2026-06-23
 
 ### Fixed
