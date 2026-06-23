@@ -7,7 +7,7 @@ import { createAnimatedRenderer } from "../core/ascii-renderer";
 import { onCelebrate, onVersion, onScatter, onPropShow } from "../core/celebration-bus";
 import { getProp } from "../core/prop-loader";
 import { log } from "../core/logger";
-import { mascotVisible, phaseMachineOn, globalCurrentName, setGlobalCurrentName, forceSidebarRebuild, setForceSidebarRebuild } from "../core/mascot-state";
+import { mascotVisible, phaseMachineOn, globalCurrentName, setGlobalCurrentName, forceSidebarRebuild, setForceSidebarRebuild, setSubagentActive } from "../core/mascot-state";
 
 interface SidebarMascotProps {
   mascots: Record<string, MascotPack>;
@@ -78,6 +78,7 @@ let padSlideTimer: ReturnType<typeof setInterval> | null = null;
 let padFrameTimer: ReturnType<typeof setInterval> | null = null;
 let vibeTimer: ReturnType<typeof setInterval> | null = null;
 let lastBusySessionId: string | null = null;
+let mainSessionId: string | null = null;
 let currentSessionStatus: string = "idle";
 export const resetLastBusySessionId = () => { lastBusySessionId = null; };
 
@@ -874,6 +875,19 @@ export function SidebarMascot(props: SidebarMascotProps): JSX.Element {
     };
 
     singletonUnsubs.push(props.api.event.on("session.status", (data: unknown) => {
+      const payload = data as { type?: string; properties?: { sessionID?: string; status?: { type?: string } } } | null;
+      const sessionId = payload?.properties?.sessionID ?? null;
+      const statusType = payload?.properties?.status?.type;
+      if (mainSessionId === null && sessionId !== null) {
+        mainSessionId = sessionId;
+      }
+      if (sessionId !== null && mainSessionId !== null && sessionId !== mainSessionId) {
+        const active = statusType === "busy" || statusType === "retry";
+        setSubagentActive(active);
+        log("DEBUG", `subagent session ${sessionId}: active=${active}`);
+        return;
+      }
+      setSubagentActive(false);
       handleSessionStatus(data);
     }));
 

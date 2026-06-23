@@ -5,7 +5,7 @@ import type { JSX } from "@opentui/solid";
 import type { MascotPack, MascotState, EffectTimerCtx, EffectRenderCtx, PropPack, PropPosition } from "./types";
 import { emitPropShow } from "./celebration-bus";
 import { log } from "./logger";
-import { mascotVisible } from "./mascot-state";
+import { mascotVisible, isSubagentActive } from "./mascot-state";
 
 const SUPERSCRIPT: Record<string, string> = {
   "0": "⁰", "1": "¹", "2": "²", "3": "³", "4": "⁴",
@@ -366,17 +366,24 @@ export function createAnimatedRenderer(pack: MascotPack): {
   jumpTimeout = scheduleNextJump();
 
   // ─── Pack-defined effect timers ───
+  // 派子代理视图切走时 effect timer 继续跑 → update 调 ctx.set → signal effect →
+  // reconciler insertBefore 撞失效 native 节点 → WASM OOM。
+  // try-catch 兜不住 WASM trap（穿透 JS catch 或反复崩卡死 TUI），catch 后必须 self-clear 防重复崩。
   const effectTimers: ReturnType<typeof setInterval>[] = [];
   if (effects?.timers) {
     for (const t of effects.timers) {
-      effectTimers.push(setInterval(() => {
+      let timerId: ReturnType<typeof setInterval>;
+      timerId = setInterval(() => {
         if (!mascotVisible()) return;
+        if (isSubagentActive()) return;
         try {
           t.update(timerCtx);
         } catch (e) {
-          log("ERROR", `effect timer update failed (interval=${t.interval}): ${e}`);
+          log("ERROR", `effect timer crashed (interval=${t.interval}), self-clearing: ${e}`);
+          clearInterval(timerId);
         }
-      }, t.interval));
+      }, t.interval);
+      effectTimers.push(timerId);
     }
   }
 

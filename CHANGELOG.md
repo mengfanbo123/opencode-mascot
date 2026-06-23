@@ -2,6 +2,11 @@
 
 本项目版本号遵循 semver。每个版本列出主要变更。
 
+## [1.1.3] - 2026-06-23
+
+### Fixed
+- **派子代理 effect timer WASM OOM 修复**：v1.1.2 移除 heartbeat buffer 后原始崩溃回归——effect timer（yueer/index.ts:84 `update`）在派子代理视图切走时继续跑，`ctx.set()` 操作失效 scope signal → reconciler insertBefore 撞失效 native 节点 → WASM trap 穿透 JS try-catch → TUI 卡死。诊断：JS try-catch 兜不住 WASM trap（Bun 包装为 Error 但反复崩卡死 TUI），catch 后必须 self-clear 防重复崩。修复三招：(1) effect timer catch 后 `clearInterval` self-clear 止血；(2) handler 用 sessionID 区分主/子代理 session，子代理事件忽略（不 setState）+ 设 `subagentActive` 标志；(3) effect timer 检查 `isSubagentActive()` 派子代理期间停 update（预防性，不依赖 catch）
+
 ## [1.1.2] - 2026-06-23
 
 ### Fixed

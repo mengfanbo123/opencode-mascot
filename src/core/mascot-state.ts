@@ -21,6 +21,12 @@ const markSlotActive = () => { lastSlotActiveTs = Date.now(); };
 const isSlotStale = () => Date.now() - lastSlotActiveTs > SLOT_GUARD_MS;
 const getLastSlotActiveTs = () => lastSlotActiveTs;
 
+// ─── 子代理检测：派子代理时 session.status 事件 sessionID 不同于主 session ───
+// handler 检测后设标志，effect timer 检查标志停 update 防 WASM OOM
+let subagentActive = false;
+const isSubagentActive = () => subagentActive;
+const setSubagentActive = (v: boolean) => { subagentActive = v; };
+
 export {
   mascotVisible,
   setMascotVisible,
@@ -34,4 +40,6 @@ export {
   isSlotStale,
   getLastSlotActiveTs,
   SLOT_GUARD_MS,
+  isSubagentActive,
+  setSubagentActive,
 };
