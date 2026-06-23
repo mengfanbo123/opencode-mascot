@@ -2,6 +2,15 @@
 
 本项目版本号遵循 semver。每个版本列出主要变更。
 
+## [1.1.1] - 2026-06-23
+
+### Fixed
+- **派子代理时 TUI 崩溃修复（Out of bounds memory access）**：根因——`session.status` handler 零可见性 guard，派子代理触发 opencode 视图切换，sidebar_content slot 不再被调用，但 createRoot 缓存的 element reactive scope 仍活；此时 session.status=busy 事件打到 handler → setState 触发 element() 重渲染 → solid/opentui reconciler insertBefore 撞上已被视图切换吊空的 native 节点 → children 数组越界 → WASM OOM。附：sidebar-mascot.tsx:1022 pad 渲染 IIFE 冗余 `currentName()` 调用移除（1025 行 fg 读取仍有 reactive 依赖，pad 同步闪机制独立保障切形象时 frames 更新，不降级）
+- **三招止血**：
+  1. **Slot heartbeat guard**（mascot-state.ts + tui.tsx + sidebar-mascot.tsx）：sidebar_content 被 opencode 调用 = 视图可见心跳；session.status handler 检测心跳超时（>500ms）→ buffer pendingState 不立即 setState；视图回归 sidebar_content 重新被调用 → auto-flush（200ms interval 检测）。延迟非跳过，状态最终一致
+  2. **staleNow 重建**（tui.tsx sidebar_content）：检测 slot 从 stale 恢复 → dispose 旧 createRoot + recreate，修 native 节点被视图切换破坏后回来不显示的问题（原注释说有 disposed 标志但代码实际缺失）
+  3. **effect timer try-catch**（ascii-renderer.tsx:372-379）：setInterval 回调操作已 dispose scope 的 signal 时静默 catch，防 scope 失效崩溃
+
 ## [1.1.0] - 2026-06-19
 
 ### Fixed

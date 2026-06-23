@@ -371,7 +371,11 @@ export function createAnimatedRenderer(pack: MascotPack): {
     for (const t of effects.timers) {
       effectTimers.push(setInterval(() => {
         if (!mascotVisible()) return;
-        t.update(timerCtx);
+        try {
+          t.update(timerCtx);
+        } catch (e) {
+          log("ERROR", `effect timer update failed (interval=${t.interval}): ${e}`);
+        }
       }, t.interval));
     }
   }
